@@ -33,7 +33,8 @@ describe('Mock snapshot and relation contracts', () => {
       }
       expect(RELATION_TYPES).toContain(result.relationType);
       expect(result.reason.length).toBeGreaterThan(20);
-      expect(result.possibleOutcome.length).toBeGreaterThan(20);
+      expect(result.possibleOutcome.length).toBeGreaterThan(8);
+      expect(result.possibleOutcome).toMatch(/[\u4e00-\u9fff]/);
     }
   });
   it('TEST 01: similar design studios are peers, not the strongest fit', () => {

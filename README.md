@@ -1,5 +1,7 @@
 # Brand Gravity Demo V0
 
+新对话请先阅读 / Start a new conversation with: [接续说明 / Handoff](docs/HANDOFF-CN-EN.md)。
+
 最新界面与实验页说明 / Latest UI & visual lab notes: [双语更新记录](docs/AVATAR-LAB-LOD-UPDATE-CN-EN.md)。
 
 独立的 React + TypeScript + Vite 前端 Demo。当前目录原本为空，没有现有框架、业务功能或 Git 仓库。

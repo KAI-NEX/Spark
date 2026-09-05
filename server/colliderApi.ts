@@ -1,3 +1,4 @@
+import { CodexTextProvider } from './codexProvider';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Buffer } from 'node:buffer';
 import { resolve } from 'node:path';
@@ -50,10 +51,13 @@ export function colliderApi(env: NodeJS.ProcessEnv): Plugin {
     const cwd = resolve('integrations/collider/brand-collider-skills-design');
     let provider: TextProvider | undefined;
     let imageProvider: OpenAIImageProvider | undefined;
-    if (env.OPENAI_API_KEY || env.OPENAI_PROVIDER === 'cpa') {
+    if (env.BRAND_AI_PROVIDER === 'codex') {
+      const local = new CodexTextProvider(env.CODEX_BIN || 'codex');
+      if (await local.available()) provider = local;
+    } else if (env.OPENAI_API_KEY || env.OPENAI_PROVIDER === 'cpa') {
       try { provider = new OpenAITextProvider(loadImageConfig({ ...env, OPENAI_BASE_URL: env.OPENAI_BASE_URL || 'https://api.openai.com/v1' }, cwd), loadTextOptions(env)); } catch { /* Configuration details and secrets stay server-side. */ }
     }
-    if (provider) { try { imageProvider = new OpenAIImageProvider(loadImageConfig({...env,OPENAI_BASE_URL:env.OPENAI_BASE_URL || 'https://api.openai.com/v1',IMAGE_TIMEOUT_MS:'180000'},cwd)); } catch { /* Leave image generation unavailable. */ } }
+    if (provider && env.BRAND_AI_PROVIDER !== 'codex') { try { imageProvider = new OpenAIImageProvider(loadImageConfig({...env,OPENAI_BASE_URL:env.OPENAI_BASE_URL || 'https://api.openai.com/v1',IMAGE_TIMEOUT_MS:'180000'},cwd)); } catch { /* Leave image generation unavailable. */ } }
     const runtime = new ColliderRuntime({ cwd, provider, outputDir: resolve('outputs/collider-sessions') });
     await runtime.init(); return { runtime, provider, imageProvider };
   })();
@@ -61,6 +65,7 @@ export function colliderApi(env: NodeJS.ProcessEnv): Plugin {
     const path = req.url?.split('?')[0] ?? '';
     if (!path.startsWith('/api/collider/')) { next(); return; }
     const send = (status: number, body: unknown) => { if (res.destroyed) return; res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(body)); };
+    if (env.BRAND_AI_PROVIDER === 'codex' && (!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress || '') || !/^(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/.test(req.headers.host || ''))) { send(403,{error:'本地 Codex 仅接受本机页面请求。'}); return; }
     const origin = req.headers.origin;
     if (origin && ![`http://${req.headers.host}`, `https://${req.headers.host}`].includes(origin)) { send(403, { error: '请从当前页面发起请求。' }); return; }
     try {
@@ -70,7 +75,7 @@ export function colliderApi(env: NodeJS.ProcessEnv): Plugin {
         catch { send(404,{error:'图片暂不可用，请重新生成。'}); } return;
       }
       const { runtime, provider, imageProvider } = await initialize();
-      if (path === '/api/collider/status' && req.method === 'GET') { send(200, { configured: Boolean(provider), imageConfigured: Boolean(imageProvider), source: 'gifted-professor/brand', model: provider?.model }); return; }
+      if (['/api/collider/status','/api/collider/lab/status'].includes(path) && req.method === 'GET') { send(200, { configured: Boolean(provider), imageConfigured: Boolean(imageProvider), source: env.BRAND_AI_PROVIDER === 'codex' ? 'codex-local' : 'gifted-professor/brand', model: provider?.model }); return; }
       const match = /^\/api\/collider\/sessions\/(session-[a-f0-9-]+)(?:\/(run|select|pause))?$/.exec(path);
       if (match && !match[2] && req.method === 'GET') { send(200, runtime.get(match[1])); return; }
       if (req.method !== 'POST') { send(405, { error: '不支持的请求方式。' }); return; }
@@ -84,8 +89,8 @@ export function colliderApi(env: NodeJS.ProcessEnv): Plugin {
       try {
         const body = await readJson(req);
         if (path === '/api/collider/wearable') { if(!imageProvider) throw new RuntimeError('穿搭生成尚未连接。',503); send(200,await generateBrandWearable(imageProvider,body)); return; }
-        if (path === '/api/collider/analyze-brand') { send(200, await analyzeBrandDocuments(provider, body)); return; }
-        if (path === '/api/collider/field') {
+        if (['/api/collider/analyze-brand','/api/collider/lab/analyze-brand'].includes(path)) { send(200, await analyzeBrandDocuments(provider, body)); return; }
+        if (['/api/collider/field','/api/collider/lab/field'].includes(path)) {
           const skills = runtime.info().skills.filter(skill => ['brand-profile', 'collab-ideation', 'quality-review'].includes(skill.id));
           send(200, await generateProposalField(provider, body, skills.map(skill => skill.content).join('\n\n'))); return;
         }

@@ -258,3 +258,38 @@
 .lab-session-bar { display: flex; justify-content: space-between; align-items: center; padding: 9px 24px; background: #FFFFFF; border-bottom: 1px solid #111111; font-size: 11px; }.lab-session-bar button { border:0;background:none;color:#2457F5;min-height:32px; }
 @media (max-width:640px) { .compact-intake { padding-top: 92px; }.lab-layout { grid-template-columns: 1fr; gap: 24px; }.lab-portrait img { height: 350px; }.lab-gallery { grid-template-columns: repeat(4,1fr); }.avatar-lab main { padding: 22px; } }
 .avatar-lab .flow-logo { display: inline-flex; align-items: center; color: #111111; text-decoration: none; }
+/* Shared grid, flush-left text and three levels of disclosure. */
+.flow-shell .character-entry { width: min(1180px,92%); padding: 64px 0 0; grid-template-columns: 7fr 5fr; gap: 32px; align-items: center; }
+.flow-shell .entry-copy h1 { font-size: clamp(30px,3.4vw,48px); line-height: 1.4; letter-spacing: -.035em; margin: 0 0 40px; text-wrap: balance; }
+.flow-shell .entry-actions { max-width: 440px; }
+.flow-shell .entry-stage { min-height: 410px; justify-content: center; }
+.flow-shell .entry-footer { margin-top: 48px; }
+.flow-shell .entry-footer a { color: #111; text-decoration: none; }
+.flow-shell .page-close,.flow-shell .flow-close,.flow-shell .atlas-close { border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.flow-shell .page-close:hover,.flow-shell .flow-close:hover { border: 0; background: transparent; color: #2457F5; }
+.compact-understanding > summary { font-weight: 600; }
+.compact-understanding[open] > summary { border-bottom: 1px solid #111; }
+.editable-material-fields { margin: 0 0 16px 14px; padding-left: 20px; border-left: 1px solid #d1d1d1; }
+.editable-material-fields > details { border-top: 0; border-bottom: 1px solid #e2e2e2; }
+.editable-material-fields > details[open] { background: #f7f8fa; margin-left: -10px; padding: 0 10px; border-left: 2px solid #2457F5; }
+.editable-material-fields summary { display: flex; align-items: center; gap: 10px; list-style: none; font-weight: 500; }
+.editable-material-fields summary::-webkit-details-marker { display: none; }
+.editable-material-fields summary::before { content: '›'; width: 10px; display: inline-block; font-size: 18px; }
+.editable-material-fields details[open] > summary::before { transform: rotate(90deg); }
+.editable-material-fields summary span { float: none; margin-left: auto; color: #62666d; }
+.editable-material-fields label { margin-left: 20px; padding: 0 0 18px; color: #62666d; }
+.editable-material-fields textarea { border-color: #c4c7cd; background: #fff; color: #111; }
+.flow-shell .draw-heading { padding: 0; max-width: 830px; margin: 0 auto; text-align: left; }
+.flow-shell .draw-back { justify-content: flex-start; gap: 20px; }
+.flow-shell .draw-back .character { margin: auto; height: 80%; }
+.flow-shell .draw-dialog-content { padding-top: 78px; }
+.flow-shell .draw-dialog-scroll { text-align: left; }
+@media(max-width:640px) {
+  .flow-shell .character-entry { padding-top: 40px; width: calc(100% - 40px); gap: 12px; }
+  .flow-shell .entry-copy h1 { font-size: clamp(25px,6.8vw,34px); margin-bottom: 28px; letter-spacing: -.04em; }
+  .flow-shell .entry-stage { min-height: 290px; margin-top: 12px; }
+  .flow-shell .entry-footer { margin-top: 20px; }
+  .editable-material-fields { margin-left: 6px; padding-left: 12px; }
+  .editable-material-fields summary { flex-wrap: wrap; gap: 6px; }
+  .editable-material-fields label { margin-left: 8px; }
+}

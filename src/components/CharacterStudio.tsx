@@ -74,7 +74,7 @@ export function CharacterStudio({ initial, onClose, onApply }: {
   const activePart = chosen?.parts.find(part => part.id === highlight);
   const partDefinition = PARTS.find(part => part.id === highlight)!;
   return <dialog className="character-studio" ref={dialog} aria-labelledby="studio-title" onCancel={event => { event.preventDefault(); onClose(); }}>
-    <header className="studio-header"><div><p className="mono">BRAND CHARACTER STUDIO</p><h1 id="studio-title">让品牌，长成自己的样子。</h1><p>从公司资料出发，找到属于你的轮廓。</p></div><button className="atlas-close" aria-label="关闭形象工作室" onClick={onClose}>×</button></header>
+    <header className="studio-header"><div><p className="mono">品牌角色 STUDIO</p><h1 id="studio-title">让品牌，长成自己的样子。</h1><p>从公司资料出发，找到属于你的轮廓。</p></div><button className="atlas-close" aria-label="关闭形象工作室" onClick={onClose}>←</button></header>
     <ol className="studio-steps"><li><span>01</span>填写公司资料</li><li className={candidates.length ? 'step-active' : ''}><span>02</span>选择候选形象</li><li><span>03</span>带入关系场</li></ol>
     <div className="studio-layout">
       <form className="studio-form" ref={form} onSubmit={event => { event.preventDefault(); void generate('ai'); }}>
@@ -95,7 +95,7 @@ export function CharacterStudio({ initial, onClose, onApply }: {
       </form>
       <div className="studio-results" ref={results} tabIndex={-1} aria-label="形象候选与部件说明" aria-busy={busy}>
         {chosen && current ? <>
-          <div className="studio-results-heading"><div><p className="mono">YOUR POSSIBLE SELVES</p><h2>同一个品牌，三种表达。</h2></div><span className="studio-source">{chosen.source === 'ai' ? 'AI 生成' : '本地规则预览 · 非 AI'}</span></div>
+          <div className="studio-results-heading"><div><p className="mono">品牌的多种表达</p><h2>同一个品牌，三种表达。</h2></div><span className="studio-source">{chosen.source === 'ai' ? 'AI 生成' : '本地规则预览 · 非 AI'}</span></div>
           <div className="studio-candidates" role="radiogroup" aria-label="选择品牌形象">
             {candidates.map((candidate, index) => <label className={`studio-candidate ${index === selected ? 'candidate-selected' : ''}`} key={`${candidate.signature}-${index}`}>
               <input type="radio" name="character-choice" checked={index === selected} onChange={() => setSelected(index)} aria-label={candidate.name} />
@@ -115,7 +115,7 @@ export function CharacterStudio({ initial, onClose, onApply }: {
             <p className="studio-helper">大小表达资料中的能力侧重，并非能力评分。基础尺寸不代表能力弱。</p>
           </section>
           <footer className="studio-apply"><div><strong>{brief.name}</strong><span>选择将保存在此浏览器，并应用到关系场、图鉴和抽卡。</span></div><button type="button" className="primary-button" disabled={busy} onClick={() => { const message = onApply(brief, chosen); if (message) setError(message); }}>使用这个形象 <span>→</span></button></footer>
-        </> : <div className="studio-empty"><div className="studio-empty-portraits">{createLocalCandidates(EXAMPLE).map(recipe => <BrandCharacter key={recipe.silhouette} brand={candidateBrand(EXAMPLE, recipe)} />)}</div><p className="mono">SIX PARTS. ONE OF A KIND.</p><h2>能力决定比例。<br />个性决定表达。</h2><p>填入公司信息，生成 3 个可以选择的形象。<br />每个部件都能追溯到你的能力描述。</p><div className="studio-empty-key">{PARTS.map(part => <span key={part.id}><CapabilityIcon id={part.icon} />{part.meaning}</span>)}</div><span className="studio-preview-caption">示意角色 · 尚未生成你的公司形象</span></div>}
+        </> : <div className="studio-empty"><div className="studio-empty-portraits">{createLocalCandidates(EXAMPLE).map(recipe => <BrandCharacter key={recipe.silhouette} brand={candidateBrand(EXAMPLE, recipe)} />)}</div><p className="mono">六个部件，独特的角色。</p><h2>能力决定比例。<br />个性决定表达。</h2><p>填入公司信息，生成 3 个可以选择的形象。<br />每个部件都能追溯到你的能力描述。</p><div className="studio-empty-key">{PARTS.map(part => <span key={part.id}><CapabilityIcon id={part.icon} />{part.meaning}</span>)}</div><span className="studio-preview-caption">示意角色 · 尚未生成你的公司形象</span></div>}
       </div>
     </div>
   </dialog>;

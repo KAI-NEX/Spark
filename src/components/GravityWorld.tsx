@@ -35,7 +35,7 @@ export const GravityWorld = memo(function GravityWorld({ brands, focus, position
   const selectedPosition = positions.find(position => position.brandId === selectedId);
   const showConnection = selectedId !== focus.id && nodeLOD.get(selectedId) !== 'dormant' && selectedPosition;
 
-  return <section className={`canvas-shell ${brands.length <= 7 ? 'sparse-world' : ''} ${dragging ? 'is-dragging' : ''}`} aria-label="Brand gravity world" data-world-width={VIEW_CONFIG.worldWidth} data-world-height={VIEW_CONFIG.worldHeight}>
+  return <section className={`canvas-shell ${brands.length <= 7 ? 'sparse-world' : ''} ${dragging ? 'is-dragging' : ''}`} aria-label="品牌引力空间" data-world-width={VIEW_CONFIG.worldWidth} data-world-height={VIEW_CONFIG.worldHeight}>
     <div className="canvas-intro"><h1>选择一个伙伴。</h1><p>点击品牌，探索它的伙伴。</p></div>
     <div ref={canvasRef} className="canvas" data-testid="canvas" {...handlers}>
       <div ref={worldRef} className="world" data-testid="world">
@@ -49,12 +49,12 @@ export const GravityWorld = memo(function GravityWorld({ brands, focus, position
       </div>
     </div>
     <div className="canvas-bottom">
-      <div className="field-key" aria-label="Viewport detail levels">
-        {DETAIL_LEVELS.map(lod => <div key={lod}><i className={`key-dot ${lod}`} /><strong>{lod}</strong><span data-testid={`count-${lod}`}>{counts[lod]}</span></div>)}
-        <p>Drag to explore · Scroll to zoom<br />Click a brand to inspect</p>
+      <div className="field-key" aria-label="视口细节层级">
+        {DETAIL_LEVELS.map(lod => <div key={lod}><i className={`key-dot ${lod}`} /><strong>{{full:'完整角色',blurred:'虚化角色',portrait:'头像',marker:'点',dormant:'视口之外',simple:'简化角色',signature:'品牌缩写'}[lod]}</strong><span data-testid={`count-${lod}`}>{counts[lod]}</span></div>)}
+        <p>拖动探索 · 滚动缩放<br />点击品牌查看</p>
       </div>
-      <div className="zoom-controls" data-no-pan><button aria-label="Zoom out" disabled={view.zoom <= VIEW_CONFIG.minZoom} onClick={() => zoom(1 / VIEW_CONFIG.zoomStep)}><Icon name="minus" /></button><output aria-label="Zoom level">{Math.round(view.zoom * 100)}%</output><button aria-label="Zoom in" disabled={view.zoom >= VIEW_CONFIG.maxZoom} onClick={() => zoom(VIEW_CONFIG.zoomStep)}><Icon name="plus" /></button></div>
-      <span className="canvas-note">{brands.length} BRANDS · EXPLORE BEYOND THE VIEW</span>
+      <div className="zoom-controls" data-no-pan><button aria-label="缩小" disabled={view.zoom <= VIEW_CONFIG.minZoom} onClick={() => zoom(1 / VIEW_CONFIG.zoomStep)}><Icon name="minus" /></button><output aria-label="缩放比例">{Math.round(view.zoom * 100)}%</output><button aria-label="放大" disabled={view.zoom >= VIEW_CONFIG.maxZoom} onClick={() => zoom(VIEW_CONFIG.zoomStep)}><Icon name="plus" /></button></div>
+      <span className="canvas-note">{brands.length} 个品牌 · 拖动探索更多伙伴</span>
     </div>
   </section>;
 });

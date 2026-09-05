@@ -18,14 +18,13 @@ export function ProposalField({ label, field, home, partner, draft, onApply, chi
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
   const generate = async () => {
-    if (localOnly) return;
     controller.current?.abort(); const request = new AbortController(); controller.current = request;
     setBusy(true); setError(''); setSuggestion('');
-    try { const result = await api<{ value: string }>('field', { field, brands: [home, partner], draft }, request.signal); if (!request.signal.aborted) setSuggestion(result.value); }
+    try { const result = await api<{ value: string }>(localOnly ? 'lab/field' : 'field', { field, brands: [home, partner], draft }, request.signal); if (!request.signal.aborted) setSuggestion(result.value); }
     catch (reason) { if (!request.signal.aborted) setError(reason instanceof Error ? reason.message : '生成失败，请重试。'); }
     finally { if (!request.signal.aborted) setBusy(false); }
   };
-  return <div className="proposal-field"><div className="proposal-field-heading"><span>{label}</span><button type="button" className="ai-field-button" title={localOnly ? "本地实验，请手动填写" : "AI 生成建议"} aria-label={`AI 生成：${label}`} disabled={busy || localOnly} onClick={() => void generate()}><Icon name="sparkles" />{busy ? <small>生成中</small> : null}</button></div><label><span className="sr-only">{label}</span>{children}</label>{error ? <p className="flow-error" role="alert">{error}</p> : null}{suggestion ? <div className="ai-suggestion"><strong>AI 建议 · 请核对</strong><p>{suggestion}</p><div><button type="button" onClick={() => { onApply(suggestion); setSuggestion(''); }}>采用建议</button><button type="button" onClick={() => setSuggestion('')}>保留我的内容</button></div></div> : null}</div>;
+  return <div className="proposal-field"><div className="proposal-field-heading"><span>{label}</span><button type="button" className="ai-field-button" title="智能生成建议" aria-label={`AI 生成：${label}`} disabled={busy} onClick={() => void generate()}><Icon name="sparkles" />{busy ? <small>生成中</small> : null}</button></div><label><span className="sr-only">{label}</span>{children}</label>{error ? <p className="flow-error" role="alert">{error}</p> : null}{suggestion ? <div className="ai-suggestion"><strong>AI 建议 · 请核对</strong><p>{suggestion}</p><div><button type="button" onClick={() => { onApply(suggestion); setSuggestion(''); }}>采用建议</button><button type="button" onClick={() => setSuggestion('')}>保留我的内容</button></div></div> : null}</div>;
 }
 const asColliderBrand = (brand: Brand) => ({ name: brand.name, description: `品牌定位：${brand.category}\n已有能力：${brand.offers}\n需求：${brand.needs || '待补充'}\n目标：${brand.intent || '待补充'}\n受众：${brand.audience || '待补充'}\n气质：${brand.identity || '待补充'}\n边界：${brand.constraints || '待确认'}`, files: brand.supportingEvidence ? [{ name: '品牌提供的案例与依据.txt', text: brand.supportingEvidence }] : [] });
 export function ColliderProposal({ home, partner, draft, onApply, readOnly = false }: { home: Brand; partner: Brand; draft: InvitationDraft; readOnly?: boolean; onApply: (draft: Pick<InvitationDraft, 'title' | 'concept' | 'contribution' | 'ask'>) => void }) {

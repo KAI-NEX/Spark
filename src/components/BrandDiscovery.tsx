@@ -9,9 +9,9 @@ import './discovery.css';
 type Mode = 'tarot' | 'pack' | 'comet';
 type Phase = 'idle' | 'opening' | 'choosing' | 'drawing' | 'revealed';
 const MODES: { id: Mode; label: string; description: string }[] = [
-  { id: 'tarot', label: 'Tarot', description: 'A quiet moment of discovery.' },
-  { id: 'pack', label: 'Card pack', description: 'Open a little world of possibilities.' },
-  { id: 'comet', label: 'Comet', description: 'Follow a connection across your world.' },
+  { id: 'tarot', label: '翻牌', description: '安静探索新的伙伴。' },
+  { id: 'pack', label: '卡包', description: '打开新的合作可能。' },
+  { id: 'comet', label: '流星', description: '沿着连接探索品牌世界。' },
 ];
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -26,7 +26,7 @@ function CardBack() {
       <path d="m90 98 6 16 16 6-16 6-6 16-6-16-16-6 16-6Z" fill="currentColor" stroke="none" />
       <circle cx="47" cy="78" r="3" fill="currentColor" /><circle cx="133" cy="162" r="3" fill="currentColor" />
     </svg>
-    <span className="card-corner bottom">POSSIBILITY AWAITS</span>
+    <span className="card-corner bottom">探索合作可能</span>
   </span>;
 }
 
@@ -84,23 +84,23 @@ export function BrandDiscovery({ brands, relations, focus, onClose, onExplore }:
   return <dialog ref={dialogRef} className="discovery-dialog" aria-labelledby="discovery-title" onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <article className={`discovery-panel mode-${mode} phase-${draw.phase}`}>
       <header className="discovery-header">
-        <span className="discovery-eyebrow"><Icon name="orbit" /> THE ART OF CONNECTION</span>
-        <button className="discovery-close" aria-label="Close discovery" onClick={onClose}>×</button>
+        <span className="discovery-eyebrow"><Icon name="orbit" /> 品牌连接</span>
+        <button className="discovery-close" aria-label="返回匹配" onClick={onClose}>←</button>
       </header>
       <div className="discovery-heading">
-        <p className="discovery-kicker">A NEW PERSPECTIVE FOR {focus.name.toUpperCase()}</p>
-        <h1 id="discovery-title">Let possibility find you.</h1>
+        <p className="discovery-kicker">为 {focus.name} 发现新视角</p>
+        <h1 id="discovery-title">让新的可能找到你。</h1>
         <p>{selectedMode.description}</p>
       </div>
-      <div className="discovery-modes" role="group" aria-label="Discovery animation style">
+      <div className="discovery-modes" role="group" aria-label="抽卡动画风格">
         {MODES.map(item => <button key={item.id} aria-pressed={mode === item.id} disabled={busy} onClick={() => changeMode(item.id)}>{item.label}</button>)}
       </div>
       <div className="discovery-stage" data-testid="discovery-stage" data-phase={draw.phase} data-mode={mode}>
         <div className="stage-orbit stage-orbit-outer" aria-hidden="true" /><div className="stage-orbit stage-orbit-inner" aria-hidden="true" />
         <span className="stage-star star-one" aria-hidden="true">✦</span><span className="stage-star star-two" aria-hidden="true">✧</span>
-        {deck.length === 0 ? <p className="discovery-empty">No other brands in this field yet.</p> : <>
-          {(draw.phase === 'idle' || draw.phase === 'opening') && mode === 'pack' ? <button className="discovery-pack" disabled={busy} onClick={() => setDraw({ phase: 'opening', index: null })} aria-label="Open the card pack"><CardBack /><span className="pack-seal">OPEN THE PACK</span></button> : null}
-          {draw.phase === 'idle' && mode === 'comet' ? <button className="comet-launch" onClick={() => choose(0)}><span aria-hidden="true">✦</span>Follow a connection<Icon name="arrow" /></button> : null}
+        {deck.length === 0 ? <p className="discovery-empty">这里暂时没有其他品牌。</p> : <>
+          {(draw.phase === 'idle' || draw.phase === 'opening') && mode === 'pack' ? <button className="discovery-pack" disabled={busy} onClick={() => setDraw({ phase: 'opening', index: null })} aria-label="打开卡包"><CardBack /><span className="pack-seal">打开卡包</span></button> : null}
+          {draw.phase === 'idle' && mode === 'comet' ? <button className="comet-launch" onClick={() => choose(0)}><span aria-hidden="true">✦</span>探索一条连接<Icon name="arrow" /></button> : null}
           {mode === 'comet' && draw.phase === 'drawing' ? <div className="comet-trail" aria-hidden="true"><i /><i /><i /></div> : null}
           {(draw.phase === 'choosing' || draw.phase === 'drawing' || revealed) ? <div className="discovery-deck" key={round}>
             {deck.map(({ brand, relation }, index) => {
@@ -112,10 +112,10 @@ export function BrandDiscovery({ brands, relations, focus, onClose, onExplore }:
                 aria-hidden={draw.index !== null && !active ? true : undefined} onClick={() => choose(index)}>
                 <span className="discovery-card-inner"><CardBack />
                   <span className="discovery-card-front" aria-hidden={!revealed || !active}>
-                    <span className="card-corner top">A NEW CONNECTION</span>
+                    <span className="card-corner top">新的连接</span>
                     <span className="card-portrait"><BrandCharacter brand={brand} /></span>
                     <strong>{brand.name}</strong><span className="card-category card-capability">{describeBrandCharacter(brand).capabilities.slice(0, 2).map(capability => capability.label).join(' · ') || 'Capability not specified'}</span>
-                    <span className="card-fit">{relation.collaborationFit}<small>COLLABORATION FIT</small></span>
+                    <span className="card-fit">{relation.collaborationFit}<small>合作评价</small></span>
                   </span>
                 </span>
               </button>;
@@ -128,10 +128,10 @@ export function BrandDiscovery({ brands, relations, focus, onClose, onExplore }:
         {revealed && chosen ? <div className="discovery-result" role="status">
           <p className="discovery-relation-type">{chosen.relation.relationType}</p>
           <p className="discovery-outcome">{chosen.relation.possibleOutcome}</p>
-          <div className="discovery-result-actions"><button className="quiet-button" onClick={again}>Discover another</button><button ref={exploreRef} className="primary-button" onClick={() => onExplore(chosen.brand.id)}>Explore this connection<Icon name="arrow" /></button></div>
+          <div className="discovery-result-actions"><button className="quiet-button" onClick={again}>继续探索</button><button ref={exploreRef} className="primary-button" onClick={() => onExplore(chosen.brand.id)}>查看这个伙伴<Icon name="arrow" /></button></div>
         </div> : <div className="discovery-instructions" role="status">
-          <p>{busy ? 'A connection is taking shape…' : draw.phase === 'choosing' ? 'Choose a card. Meet a possibility.' : 'Every connection starts with a little curiosity.'}</p>
-          {busy ? <button className="discovery-skip" onClick={() => setDraw(previous => ({ ...previous, phase: previous.phase === 'opening' ? 'choosing' : 'revealed' }))}>Skip animation</button> : <span>{candidates.length} connections in this field · For {focus.name}</span>}
+          <p>{busy ? '正在发现新的连接…' : draw.phase === 'choosing' ? '选择卡片，认识新的伙伴。' : '从一次好奇开始新的连接。'}</p>
+          {busy ? <button className="discovery-skip" onClick={() => setDraw(previous => ({ ...previous, phase: previous.phase === 'opening' ? 'choosing' : 'revealed' }))}>跳过动画</button> : <span>{candidates.length} 条连接 · 当前品牌 {focus.name}</span>}
         </div>}
       </footer>
     </article>

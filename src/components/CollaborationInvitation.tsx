@@ -3,7 +3,6 @@ import type { Brand } from '../domain/types';
 import type { Invitation, InvitationAction, InvitationPerspective } from '../domain/invitation';
 import { canSendInvitation } from '../domain/invitation';
 import { BrandCharacter } from './BrandCharacter';
-import { FlowIcon } from './FlowIcon';
 import { ProposalField, ColliderProposal } from './ProposalAi';
 import { Icon } from './Icon';
 
@@ -21,10 +20,10 @@ export function CollaborationInvitation({ home, partner, invitation, dispatch, o
   useEffect(() => { setFeedback(''); }, [invitation.version]);
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [perspective, invitation.status, handoff]);
   const respond = (response: 'accepted' | 'revision' | 'declined') => dispatch({ type: 'respond', actor: perspective, response, feedback });
-  return <main className="invitation-page"><div className="invitation-top"><button className="flow-close" aria-label="关闭联名邀请" onClick={onBack}><FlowIcon name="close" /></button><span className="invitation-version">提案 V{invitation.version}</span><span className="invitation-state" role="status">{STATUS[invitation.status]}</span></div>
+  return <main className="invitation-page"><div className="invitation-top"><button className="flow-close" aria-label="返回伙伴详情" onClick={onBack}><Icon name="back" /></button><span className="invitation-version">提案 V{invitation.version}</span><span className="invitation-state" role="status">{STATUS[invitation.status]}</span></div>
     <div className="invitation-heading"><h1>{handoff ? '从这里，开始共创。' : recipient ? `${home.name} 想和你一起做点什么。` : '先让合作，看得见。'}</h1><p>{handoff ? '双方已同意继续沟通。共创界面留待下一阶段。' : recipient ? '先看看这份联名预演，再决定是否继续。' : `${home.name} × ${partner.name}`}</p></div>
     {invitation.status !== 'draft' && !handoff ? <div className="perspective-switch" role="group" aria-label="本地演示视角"><span>本地演示</span><button aria-pressed={!recipient} onClick={() => setPerspective('sender')}>发起方视角</button><button aria-pressed={recipient} onClick={() => setPerspective('recipient')}>接收方视角</button></div> : null}
-    <div className="invitation-layout"><section className="proposal-visual" aria-label="带水印的联名预演占位"><span className="preview-not-generated">预演占位 · 暂未生成 Demo</span><div className="proposal-avatars"><BrandCharacter brand={home} /><span>×</span><BrandCharacter brand={partner} /></div><h2>{draft.title || '你们的联名，会是什么样？'}</h2><p>{draft.concept || '这里将呈现联名产物或体验的预演。'}</p><div className="proposal-watermark" aria-hidden="true">{Array.from({ length: 6 }, (_, i) => <span key={i}>{accepted ? '概念提案 · 未获商用授权' : '合作提案 · 未经双方确认'}<small>{home.name} → {partner.name} · V{invitation.version}</small></span>)}</div><span className="proposal-visual-footer">{accepted ? '已同意沟通 · 商业及授权待确认' : '仅供受邀方评估 · 不代表已联名'}</span></section>
+    <div className="invitation-layout"><section className="proposal-visual" aria-label="带水印的联名预演占位"><span className="preview-not-generated">预演占位 · 暂未生成预演</span><div className="proposal-avatars"><BrandCharacter brand={home} /><span>×</span><BrandCharacter brand={partner} /></div><h2>{draft.title || '你们的联名，会是什么样？'}</h2><p>{draft.concept || '这里将呈现联名产物或体验的预演。'}</p><div className="proposal-watermark" aria-hidden="true">{Array.from({ length: 6 }, (_, i) => <span key={i}>{accepted ? '概念提案 · 未获商用授权' : '合作提案 · 未经双方确认'}<small>{home.name} → {partner.name} · V{invitation.version}</small></span>)}</div><span className="proposal-visual-footer">{accepted ? '已同意沟通 · 商业及授权待确认' : '仅供受邀方评估 · 不代表已联名'}</span></section>
     <section className="proposal-content">
         <ColliderProposalBoundary localOnly={localOnly} readOnly={!editing} home={home} partner={partner} draft={draft} onApply={next => { for (const field of ['title', 'concept', 'contribution', 'ask'] as const) dispatch({ type: 'edit', field, value: next[field] }); }} />
       {editing ? <form onSubmit={e => { e.preventDefault(); dispatch({ type: 'send', actor: perspective }); }}>
@@ -49,5 +48,5 @@ export function CollaborationInvitation({ home, partner, invitation, dispatch, o
 
 function ColliderProposalBoundary(props: React.ComponentProps<typeof ColliderProposal> & { localOnly: boolean }) {
   const { localOnly, ...proposalProps } = props;
-  return localOnly ? <p className="proposal-note">本地实验：可以手动预演合作邀请，内容仅保留在本次页面内。</p> : <ColliderProposal {...proposalProps} />;
+  return localOnly ? <p className="proposal-note">本地实验：可用智能建议编辑邀请，内容仅保留在本次页面内。</p> : <ColliderProposal {...proposalProps} />;
 }

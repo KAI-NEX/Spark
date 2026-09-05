@@ -22,12 +22,13 @@ export function BrandIntakePage({ onBack, onEnter, initialBrand, localOnly = fal
   const [status, setStatus] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
   const [configured, setConfigured] = useState<boolean | null>(null);
+  const [providerName, setProviderName] = useState('');
   const connection = useRef<{configured:boolean;imageConfigured:boolean} | null>(null);
   const [dragging, setDragging] = useState(false);
   const request = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const alive = useRef(true);
-  useEffect(() => { alive.current = true; if(localOnly) {connection.current={configured:false,imageConfigured:false};return ()=>{alive.current=false;request.current?.abort();};} const abort = new AbortController(); void fetch('/api/collider/status', { signal: abort.signal }).then(res => res.json()).then(result => {connection.current=result;setConfigured(result.configured);}).catch(() => { if (!abort.signal.aborted) setConfigured(false); }); return () => { alive.current = false; abort.abort(); request.current?.abort(); }; }, [localOnly]);
+  useEffect(() => { alive.current = true; const abort = new AbortController(); void fetch(localOnly ? '/api/collider/lab/status' : '/api/collider/status', { signal: abort.signal }).then(res => res.json()).then(result => {connection.current=result;setConfigured(result.configured);setProviderName(result.model || '智能理解');}).catch(() => { if (!abort.signal.aborted) setConfigured(false); }); return () => { alive.current = false; abort.abort(); request.current?.abort(); }; }, [localOnly]);
   const upload = async (files: FileList | File[]) => {
     if (busy) return;
     const batch = Array.from(files);
@@ -54,12 +55,12 @@ export function BrandIntakePage({ onBack, onEnter, initialBrand, localOnly = fal
     setBusy('analyzing'); setErrors(failures); setStatus('正在理解资料，生成品牌角色…');
     request.current = controller;
     try {
-      const available = localOnly ? {configured:false,imageConfigured:false} : connection.current ?? await fetch('/api/collider/status',{signal:controller.signal}).then(res=>res.json());
+      const available = connection.current ?? await fetch(localOnly ? '/api/collider/lab/status' : '/api/collider/status',{signal:controller.signal}).then(res=>res.json());
       connection.current=available; setConfigured(available.configured);
-      const result: ProfileAnalysis = available.configured === false ? localProfile(inputDocuments) : await post<ProfileAnalysis>('analyze-brand', { documents:inputDocuments }, controller.signal);
+      const result: ProfileAnalysis = available.configured === false ? localProfile(inputDocuments) : await post<ProfileAnalysis>(localOnly ? 'lab/analyze-brand' : 'analyze-brand', { documents:inputDocuments }, controller.signal);
       if (!alive.current || controller.signal.aborted) return;
       setAnalysis(result); setGeneratedFiles(materialFingerprint(inputDocuments));
-      if(available.imageConfigured && result.fields.name && result.fields.offers) {
+      if(!localOnly && available.imageConfigured && result.fields.name && result.fields.offers) {
         setBusy('dressing'); setStatus('正在把品牌产品穿到角色上…');
         try {
           const wearable = await post<NonNullable<ProfileAnalysis['profile']['wearable']>>('wearable',result,controller.signal);
@@ -80,7 +81,7 @@ export function BrandIntakePage({ onBack, onEnter, initialBrand, localOnly = fal
       <div className={`material-dropzone ${dragging ? 'is-dragging-over' : ''}`} onDragOver={event=>{event.preventDefault();setDragging(true);}} onDragLeave={()=>setDragging(false)} onDrop={event=>{event.preventDefault();setDragging(false);void upload(Array.from(event.dataTransfer.files));}}>
         <Icon name="upload"/><h1>把品牌资料放在这里</h1><p>多文件一起导入</p>
         <small>最多 10 份 · 文字每份 8 MB · 最多 3 张产品图，每张 6 MB</small>
-        <small>{localOnly ? '本地实验支持 TXT / MD / JSON，不上传到后台。' : 'PDF / Word / TXT / MD / JSON / PNG / JPG / WebP'}</small>
+        <small>{localOnly ? '实验支持 TXT / MD / JSON · 由本机服务交给 Codex 理解，不存入品牌库。' : 'PDF / Word / TXT / MD / JSON / PNG / JPG / WebP'}</small>
         <button className="flow-primary" disabled={Boolean(busy)} onClick={()=>inputRef.current?.click()}>导入品牌资料</button>
         <small className="upload-caption">导入资料，生成你的品牌角色。</small>
         <input ref={inputRef} type="file" multiple accept={localOnly ? '.txt,.md,.json' : '.pdf,.docx,.txt,.md,.json,.png,.jpg,.jpeg,.webp'} aria-label="上传多个品牌文件" className="sr-only" disabled={Boolean(busy)} onChange={event=>{if(event.target.files)void upload(event.target.files);event.target.value='';}}/>
@@ -89,7 +90,8 @@ export function BrandIntakePage({ onBack, onEnter, initialBrand, localOnly = fal
       {status ? <p className="material-status" role="status">{status}</p> : null}
       {errors.map(error=><p key={error} role="alert" className="flow-error">{error}</p>)}
       {generatedFiles ? <div className="material-actions"><button className="flow-secondary" disabled={!filesChanged || Boolean(busy)} onClick={()=>void analyze()}>{busy ? '正在生成…' : '重新生成角色'}<Icon name="regenerate"/></button><small>{filesChanged ? '使用更新后的文件生成' : '更改文件后可重新生成'}</small></div> : null}
-      {configured===false && !localOnly ? <small className="intake-connection">AI 尚未连接 · 当前为基础识别与穿搭示意</small> : null}
+      {configured===true ? <small className="intake-connection">{providerName}已连接 · 资料理解</small> : null}
+      {configured===false ? <small className="intake-connection">AI 尚未连接 · 当前为基础识别与穿搭示意</small> : null}
       {analysis ? <details className="material-understanding compact-understanding"><summary>材料中识别到的内容 <span>{INTAKE_FIELDS.filter(field=>analysis.fields[field.key]).length} 个栏目 · 点击核对</span></summary>
         <div className="editable-material-fields">{INTAKE_FIELDS.map(field=><details key={field.key}><summary>{field.label}<span>{analysis.fields[field.key] ? '已识别 · 编辑' : '待补充'}</span></summary><label>{field.label}<textarea disabled={Boolean(busy)} rows={field.key==='name'?1:3} maxLength={field.max} value={analysis.fields[field.key]} placeholder={field.placeholder} onChange={event=>update(field.key,event.target.value)}/></label></details>)}</div>
       </details> : null}
@@ -97,7 +99,7 @@ export function BrandIntakePage({ onBack, onEnter, initialBrand, localOnly = fal
       {look ? <div className="intake-equipment"><strong>{look.label}</strong></div> : null}
       <section className="next-material"><h3>补充这些，让角色与连接更具体</h3>{gaps.map((gap,index)=><div key={`${gap.field}-${index}`}><Icon name="document"/><div><strong>{gap.material}</strong><p>{gap.reason}</p></div></div>)}</section>
     </aside></div>
-    <footer className="upload-footer intake-return">{analysis ? <><button className="flow-primary" disabled={!analysis.fields.name.trim() || Boolean(busy) || materialFingerprint(documents)!==generatedFiles} onClick={enter}>{initialBrand ? '返回 Gravity' : '进入 Gravity'}<Icon name="arrow"/></button>{!analysis.fields.name.trim() ? <small>展开识别内容，补充品牌名称即可继续。</small> : null}</> : <p>资料可以慢慢补充，先从一次相遇开始。</p>}</footer>
+    <footer className="upload-footer intake-return">{analysis ? <><button className="flow-primary" disabled={!analysis.fields.name.trim() || Boolean(busy) || materialFingerprint(documents)!==generatedFiles} onClick={enter}>{initialBrand ? '返回引力匹配' : '进入引力匹配'}<Icon name="arrow"/></button>{!analysis.fields.name.trim() ? <small>展开识别内容，补充品牌名称即可继续。</small> : null}</> : <p>资料可以慢慢补充，先从一次相遇开始。</p>}</footer>
   </main>;
 }
 async function readLocalDemoDocument(file: File): Promise<BrandDocument> {

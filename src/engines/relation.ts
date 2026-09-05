@@ -38,23 +38,23 @@ const PROJECT_BRIDGES: Record<string, number> = {
   'food:physical': 0.42, 'outdoors:physical': 0.35, 'content:outdoors': 0.4,
 };
 const LABELS: Record<string, string> = {
-  design: 'concept and product design', manufacturing: 'small-batch manufacturing',
-  material: 'material development', prototype: 'production knowledge and prototyping',
-  distribution: 'distribution', visual: 'visual direction', culture: 'cultural storytelling',
-  craft: 'traditional craft', technology: 'technology', experience: 'interactive experiences',
-  space: 'spaces', content: 'content and publishing', community: 'community and events',
-  food: 'food expertise', packaging: 'packaging', textile: 'textile development',
+  design: '概念与产品设计', manufacturing: '小批量制造',
+  material: '材料研发', prototype: '生产知识与原型制作',
+  distribution: '渠道分销', visual: '视觉设计', culture: '文化叙事',
+  craft: '传统工艺', technology: '技术', experience: '交互体验',
+  space: '空间', content: '内容与出版', community: '社群与活动',
+  finance: '财税', compliance: '合规', food: '食品专业能力', packaging: '包装', textile: '纺织研发',
 };
 const OUTCOMES: Record<string, string> = {
-  physical: 'An experimental limited-edition object collection.',
-  culture: 'A participatory exhibition connecting different cultural practices.',
-  digital: 'An interactive prototype that brings cultural stories into a digital experience.',
-  retail: 'A small pop-up combining objects, stories and a shared audience.',
-  content: 'An editorial series that introduces each practice to a new audience.',
-  food: 'A tasting experience with a distinctive ritual and material identity.',
-  industry: 'A pilot for a more efficient production and distribution workflow.',
-  outdoors: 'A small community-led outdoor experience.',
-  finance: 'A focused financial reporting workflow pilot.',
+  physical: '实验性的限量器物系列。',
+  culture: '连接不同文化实践的参与式展览。',
+  digital: '把文化故事转化为数字体验的交互原型。',
+  retail: '结合器物、故事与共同受众的小型快闪。',
+  content: '面向新受众介绍双方实践的内容系列。',
+  food: '具有独特仪式与材料表达的品鉴体验。',
+  industry: '生产与分销流程的效率试点。',
+  outdoors: '社群发起的小型户外体验。',
+  finance: '围绕财务报告流程的专项试点。',
 };
 const pair = (a: string, b: string) => [a, b].sort().join(':');
 const extract = (text: string, lexicon: Lexicon) => Object.keys(lexicon).filter(key => lexicon[key].some(word => text.toLowerCase().includes(word)));
@@ -99,22 +99,22 @@ export function calculateMockRelation(focus: Brand, target: Brand): RelationResu
     : supplied.length + received.length > 0 ? 'Capability Complement'
     : a.includes('culture') && b.includes('culture') ? 'Cultural Exchange'
     : audienceExpansion >= 80 ? 'Audience Bridge' : 'Creative Chemistry';
-  const describe = (items: string[]) => items.slice(0, 2).map(key => LABELS[key] ?? key).join(' and ');
+  const describe = (items: string[]) => items.slice(0, 2).map(key => LABELS[key] ?? key).join('与');
   const evidence = [
-    supplied.length ? `You bring ${describe(supplied)}, which ${target.name} is looking for.` : '',
-    received.length ? `They bring ${describe(received)}, which supports ${focus.name}'s needs.` : '',
+    supplied.length ? `你可以带来${describe(supplied)}，回应 ${target.name} 的需求。` : '',
+    received.length ? `对方可以带来${describe(received)}，支持 ${focus.name} 的需求。` : '',
   ].filter(Boolean).join(' ');
-  const reason = peer ? 'Your capabilities and audience overlap, but neither fills the other’s main capability gaps. Shared taste alone does not create the strongest collaboration.'
-    : tension ? `Traditional craft and technology offer productive tension. ${evidence} ${projectAffinity >= 0.7 ? 'A shared project direction makes that contrast useful.' : 'A shared project still needs to be defined.'}`
-    : `${evidence || 'There is no direct offers-to-needs match in these briefs.'} ${projectAffinity >= 0.7 ? 'Your project intentions can support a shared outcome.' : projectAffinity > 0 ? 'Your intentions are adjacent; a smaller shared brief would help.' : 'Your current project intentions point in different directions.'}`;
+  const reason = peer ? '双方能力与受众较接近，但未填补彼此的主要能力缺口。共同品味还需要转化为具体合作价值。'
+    : tension ? `传统工艺与技术形成可探索的差异。 ${evidence} ${projectAffinity >= 0.7 ? '共同的项目方向让这种差异具有合作价值。' : '具体的共同项目仍需明确。'}`
+    : `${evidence || '现有资料未显示直接的能力与需求互补。'} ${projectAffinity >= 0.7 ? '双方项目目标有机会支撑共同产物。' : projectAffinity > 0 ? '双方目标相邻，可以先明确一个小型共同任务。' : '双方当前项目目标的方向不同。'}`;
   const goal = commonGoals[0] ?? [...aGoals, ...bGoals].sort()[0];
   return {
     sourceBrandId: focus.id, targetBrandId: target.id,
     collaborationFit, relationType, ...dimensions, reason: !focus.intent.trim() || !target.intent.trim() ? `${evidence || '目前可用于判断的资料较少。'} 联名目标尚待补充，当前只显示已有能力线索。` : reason,
-    possibleOutcome: collaborationFit < 50 ? 'No convincing shared project yet. Clarify a common intent before committing.' : OUTCOMES[goal] ?? 'A small joint prototype to test the shared opportunity.',
-    caveat: conflict ? 'The industrial minimum order conflicts with a limited pilot.'
-      : projectAffinity < 0.4 ? 'Capabilities alone cannot resolve the mismatch in current intent.'
-      : !a.includes('distribution') && !b.includes('distribution') && goal === 'physical' ? 'Distribution capability remains unresolved.'
-      : peer ? 'A third partner may be needed to supply the missing capabilities.' : undefined,
+    possibleOutcome: collaborationFit < 50 ? '尚未形成明确的共同项目，投入前需先确认共同目标。' : OUTCOMES[goal] ?? '通过小型共同原型验证合作机会。',
+    caveat: conflict ? '工业起订量与限量试点存在冲突。'
+      : projectAffinity < 0.4 ? '仅凭能力互补无法解决当前目标差异。'
+      : !a.includes('distribution') && !b.includes('distribution') && goal === 'physical' ? '渠道分销能力仍待补足。'
+      : peer ? '可能需要第三方伙伴补充缺失的能力。' : undefined,
   };
 }
