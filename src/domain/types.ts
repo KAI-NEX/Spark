@@ -53,6 +53,7 @@ export interface SceneNode {
   position: SpatialPosition;
   fit: number;
   isFocus: boolean;
+  exploratory?: boolean;
 }
 
 /** Implement an adapter here to load snapshots / precomputed batch relations. */

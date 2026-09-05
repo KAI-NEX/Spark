@@ -51,7 +51,7 @@ export const LegacyBrandCharacter = memo(function LegacyBrandCharacter({ brand, 
 });
 
 /** V2 presentation. Old recipes and original vector component remain available for comparison. */
-export const BrandCharacter = memo(function BrandCharacter(props: { brand: Brand; lod?: LOD; labelled?: boolean }) {
+export const BrandCharacter = memo(function BrandCharacter(props: { brand: Brand; lod?: LOD; labelled?: boolean; look?: ReturnType<typeof brandWearable> }) {
   if (props.lod === 'dormant') return null;
   if (props.lod === 'marker') return <span className="far-marker" aria-hidden="true" />;
   if (props.lod === 'signature') {
@@ -60,7 +60,7 @@ export const BrandCharacter = memo(function BrandCharacter(props: { brand: Brand
     return <span className="brand-signature" aria-hidden="true">{initials}</span>;
   }
   if (props.lod === 'portrait') return <svg className="brand-bust" viewBox="62 0 140 150" aria-hidden={!props.labelled} role={props.labelled ? 'img' : undefined} aria-label={props.labelled ? `${props.brand.name}的角色` : undefined}>
-    <image href={brandWearable(props.brand).url} x="25" y="0" width="205" height="315" preserveAspectRatio="xMidYMid meet" onError={event=>{event.currentTarget.setAttribute('href',BASE_AVATAR);}} />
+    <image href={(props.look ?? brandWearable(props.brand)).url} x="25" y="0" width="205" height="315" preserveAspectRatio="xMidYMid meet" onError={event=>{event.currentTarget.setAttribute('href',BASE_AVATAR);}} />
   </svg>;
   return <WearableCharacter {...props} />;
 });

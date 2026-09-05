@@ -17,7 +17,7 @@ interface Props {
   resetKey: number;
   onInspect: (id: string) => void;
 }
-const DETAIL_LEVELS: LOD[] = ['full', 'blurred', 'portrait', 'marker', 'dormant'];
+const DETAIL_LEVELS: LOD[] = ['full', 'portrait', 'marker'];
 
 export const GravityWorld = memo(function GravityWorld({ brands, focus, positions, relations, selectedId, resetKey, onInspect }: Props) {
   const { canvasRef, worldRef, view, size, dragging, zoom, handlers } = useViewport(resetKey, onInspect);
@@ -30,6 +30,7 @@ export const GravityWorld = memo(function GravityWorld({ brands, focus, position
       position: positionMap.get(brand.id) ?? { brandId: brand.id, x: 0, y: 0, radius: 0 },
       fit: relations.get(brand.id)?.collaborationFit ?? 100,
       isFocus: brand.id === focus.id,
+      exploratory: relations.get(brand.id)?.exploratory,
     }));
   }, [brands, focus.id, displayPositions, relations]);
   const nodeLOD = useMemo(() => {

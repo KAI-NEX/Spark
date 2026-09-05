@@ -13,16 +13,16 @@ This local brand collaboration demo connects entry, intake, Gravity discovery, c
 - 重新生成：第一次导入自动理解；之后文件改变才启用重新生成，手动字段修正不触发模型。
 - 导航：页面返回使用无边框箭头。文件移除按钮仍为删除语义。抽卡页无左上角退出按钮，通过模式图标切换。
 - 抽卡：删除多余提示，详情不再显示 01／02／03 导航；返回时翻转收回，然后可翻其他卡牌。
-- 四级 LOD：完整穿搭 → 虚化角色 → 头像 → 点。关系评分输入、公式与权重保持不变。
+- 三级 LOD：完整角色 → 局部头像 → 点。关系评分输入、公式与权重保持不变。
 - 28 个内置品牌的显示文案与关系解释中文化；原始匹配快照保留，展示翻译不参与分数计算。
 
-The latest pass refines the entry slogan, nested intake disclosures, borderless back navigation and simplified card details. Four LOD stages remain. Chinese presentation does not change scoring inputs or weights.
+The latest pass refines the entry slogan, nested intake disclosures, borderless back navigation and simplified card details. Gravity uses three visible LOD stages: full character, cropped portrait and point. Chinese presentation does not change scoring inputs or weights.
 
 ## 交互精修 / Interaction Refinement
 
 - 首页问号使用透明底，无背景、边框或伪元素填充。
 - Gravity 使用随画布尺寸变化的统一展示缩放，保留原位置的方向和距离排序；资料少时不再默认缩至 35%。聚焦品牌显示完整角色，其他节点继续按 LOD 切换。原始评分、权重、连接筛选数量均未改变。
-- 抽卡新增咖啡围裙、户外夹克、创意针织三张静态概念素材，结合原有围巾、外套、包袋形成六种示意穿搭。内置品牌按固定映射展示；原始参考图保留，用户上传品牌不会被套入虚构产品证据。素材位于 `public/avatars/draw-v3/`，仅用于抽卡展示。
+- 抽卡新增咖啡围裙、户外夹克、创意针织三张静态概念素材，结合原有围巾、外套、包袋形成六种示意穿搭。内置品牌按固定映射展示；原始参考图保留，用户上传品牌不会被套入虚构产品证据。素材位于 `public/avatars/draw-v3/`，用于首页、抽卡和 Gravity 的概念角色展示。
 - 抽卡放大与收回共用同一角色面。收回以 `animationend` 完成，不使用固定计时器；末帧按源卡真实尺寸和位置对齐，同时淡出遮罩。支持开卡中途返回、窗口尺寸改变及减少动态效果设置。
 
 The question mark has no backdrop. Gravity uses a responsive, uniform presentation scale that preserves angles and distance ordering without altering scores, weights or discovery counts. Sparse scenes no longer start at 35%; the central brand remains a full character.
@@ -114,7 +114,7 @@ Latest visual regression: Chrome / Playwright at 1280 × 900 and 390 × 844. Twe
 
 The entry cycles through distinct concept outfits with cross-fades. The heading aligns with the blurred figure top, with a compact header and no header rule. Automatic cycling stops under reduced motion.
 
-LOD 增强从中心向边缘的细节衰减；按完整角色、虚化角色和头像的尺寸检查边缘与控件遮挡。密集节点按中心优先保留可读空间，拥挤时降级显示，原位置、匹配分数和权重不变。窄画布使用紧凑头像标签。
+LOD 增强从中心向边缘的细节衰减；按完整角色和局部头像的尺寸检查边缘与控件遮挡。密集节点按中心优先保留可读空间，拥挤时降级显示，原位置、匹配分数和权重不变。窄画布使用紧凑头像标签。
 
 LOD now checks each stage against canvas edges and controls, then reserves readable space from the center outward. Crowded nodes reduce detail rather than move or change score. Narrow canvases use compact portrait labels.
 
@@ -130,3 +130,18 @@ Chrome / Playwright covered desktop/mobile and ten zoom/pan/sparse-scene scenari
 窗口尺寸改变时曾发现节点位置的 650ms CSS 过渡与即时 LOD 判定不同步，导致过渡中的标签裁切；现已取消引力节点的独立位置过渡，让位置与层级使用同一快照。镜头导航仍沿用原有动画。稀疏和密集场景均纳入最后复测。
 
 Resize testing caught a mismatch between a 650ms position transition and immediate LOD updates. The independent node-position transition is now removed so layout and disclosure use the same snapshot. Existing camera navigation remains animated. Final checks include sparse and dense fields.
+
+
+## Gravity 三档与更多可探索品牌 / Three-stage Gravity & Expanded Exploration
+
+Gravity 展示当前品牌库中的所有品牌；资料少时仍只保留原筛选数量的连接线索。其余品牌标注「待探索」，可查看概括并聚焦它的关系；不会计入底部连接线索数量。评分公式与权重不变。普通品牌库包含 28 个内置品牌，导入一个品牌后共 29 个；实验场景显示 9 个品牌，仍不写入后台。
+
+Gravity makes the entire active library explorable while keeping evidence-based clue counts unchanged. Other candidates are labelled as exploratory, with summaries and focus navigation; they do not inflate the footer count. Scores and weights are unchanged. The standard library has 28 fixtures, or 29 after one import; the isolated lab has nine brands and writes no backend records.
+
+可见 LOD 仅有完整角色、局部头像和点，移除 Gravity 虚化中间态。中心完整角色阈值为 0.74，头像为 0.42；边缘、控件遮挡和拥挤会降低显示层级。视口外休眠仅用于性能处理，不是第四种视觉层级。首页的虚化效果保留。Gravity 与抽卡使用同一套概念穿搭；上传品牌仍优先使用实际生成结果。
+
+Only full characters, cropped portraits and points are visible. Central full-character and portrait thresholds are 0.74 and 0.42; edges, controls and crowding reduce detail. Off-screen culling is an internal optimization, not a fourth visual stage. Entry blur remains. Gravity and cards share concept outfits; uploaded brands retain generated-art precedence.
+
+验证：110 项单元测试、TypeScript、ESLint、构建通过。Chrome / Playwright 覆盖 1280×900 与 390×844、10 种缩放/平移/品牌库场景；带名称节点无重叠或裁切，无页面错误。另验证稀疏资料下仍有 29 个可探索品牌、最多 2 条初始线索，选择待探索品牌不增加线索，聚焦完整品牌后线索增加，回到自身品牌恢复原数量。本次未调用真实 AI；Safari / iOS 尚未验证。
+
+Validation: 110 unit tests, TypeScript, ESLint and build passed. Chrome / Playwright covered desktop/mobile and ten zoom, pan and library scenarios, with no overlapping/clipped named nodes or page errors. A sparse-profile flow verified 29 explorable brands with at most two initial clues, unchanged counts on candidate selection, expanded clues after focusing a complete brand, and restored counts on return. No live AI was called; Safari / iOS remain untested.

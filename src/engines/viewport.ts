@@ -30,7 +30,6 @@ export function calculateViewportLOD(screen: { x: number; y: number }, _fit: num
   const effectiveZoom = view.zoom * (1 - LOD_CONFIG.edgeFalloff * distanceFromCenter ** 2);
   const fits = (halfHeight: number, width: number = halfWidth) => screen.x >= width + 8 && screen.x <= size.width - width - 8 && screen.y >= halfHeight + 8 && screen.y <= size.height - halfHeight - 8 && !size.occlusions?.some(bounds => screen.x + width > bounds.left && screen.x - width < bounds.right && screen.y + halfHeight > bounds.top && screen.y - halfHeight < bounds.bottom);
   if (effectiveZoom >= LOD_CONFIG.fullMinZoom && fits(100)) return 'full';
-  if (effectiveZoom >= LOD_CONFIG.blurredMinZoom && fits(78)) return 'blurred';
   if (effectiveZoom >= LOD_CONFIG.portraitMinZoom && fits(42, size.width <= 640 ? 46 : halfWidth)) return 'portrait';
   return 'marker';
 }
@@ -68,11 +67,11 @@ export function resolveLODOverlap(nodes: readonly SceneNode[], levels: ReadonlyM
   for (const {node, screen} of priority) {
     let lod = result.get(node.brand.id) ?? 'dormant';
     if (lod === 'dormant' || lod === 'marker') continue;
-    const stages: LOD[] = lod === 'full' ? ['full','blurred','portrait','marker'] : lod === 'blurred' ? ['blurred','portrait','marker'] : [lod,'marker'];
+    const stages: LOD[] = lod === 'full' ? ['full','portrait','marker'] : lod === 'blurred' ? ['portrait','marker'] : [lod,'marker'];
     for (const stage of stages) {
       lod = stage;
       if (stage === 'marker') break;
-      const halfWidth = stage === 'portrait' && size.width <= 640 ? 46 : 68, halfHeight = stage === 'full' ? 100 : stage === 'blurred' ? 78 : 42;
+      const halfWidth = stage === 'portrait' && size.width <= 640 ? 46 : 68, halfHeight = stage === 'full' ? 100 : 42;
       if (!occupied.some(box => Math.abs(screen.x-box.x) < halfWidth+box.halfWidth+6 && Math.abs(screen.y-box.y) < halfHeight+box.halfHeight+6)) {
         occupied.push({...screen,halfWidth,halfHeight}); break;
       }

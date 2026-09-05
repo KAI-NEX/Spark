@@ -17,7 +17,7 @@ import './components/characters.css';
 import './components/matching-flow.css';
 import './components/invitation-flow.css';
 import { missingMatchingFields } from './domain/brandIntake';
-import { discoverRelations } from './domain/discovery';
+import { discoverRelations, gravityExplorationRelations } from './domain/discovery';
 import { loadCustomBrands, saveCustomBrands } from './engines/characterGenome';
 import type { Brand, WorldDataSource } from './domain/types';
 
@@ -44,10 +44,10 @@ export default function App({ dataSource = mockDataSource, homeBrandId = 'memory
     return dataSource.getRelations(focus, brands);
   }, [dataSource, focus, brands, fieldRevision]);
   const visibleRelations = useMemo(() => discoverRelations(focus, relations), [focus, relations]);
-  const visibleBrands = useMemo(() => brands.filter(brand => brand.id === focus.id || visibleRelations.some(relation => relation.targetBrandId === brand.id)), [brands, focus.id, visibleRelations]);
+  const explorationRelations = useMemo(() => gravityExplorationRelations(relations, visibleRelations), [relations, visibleRelations]);
   const missing = missingMatchingFields(home);
-  const positions = useMemo(() => calculateGravityPositions(focus.id, visibleRelations), [focus.id, visibleRelations]);
-  const relationMap = useMemo(() => new Map([...relations, ...visibleRelations].map(relation => [relation.targetBrandId, relation])), [relations, visibleRelations]);
+  const positions = useMemo(() => calculateGravityPositions(focus.id, explorationRelations), [focus.id, explorationRelations]);
+  const relationMap = useMemo(() => new Map(explorationRelations.map(relation => [relation.targetBrandId, relation])), [explorationRelations]);
   const selected = brands.find(brand => brand.id === selectedId) ?? focus;
   const ownRelations = useMemo(() => dataSource.getRelations(home, brands), [dataSource, home, brands]);
   const ownRelationMap = useMemo(() => new Map(ownRelations.map(relation => [relation.targetBrandId, relation])), [ownRelations]);
@@ -91,7 +91,7 @@ export default function App({ dataSource = mockDataSource, homeBrandId = 'memory
     {page === 'entry' ? <CharacterEntry brands={brands} example={home} onCreate={() => { setEditingBrand(Boolean(home.profile)); setPage('intake'); }} /> : page === 'intake' ? <BrandIntakePage localOnly={localOnly} initialBrand={editingBrand || localOnly ? home : undefined} onBack={() => setPage(editingBrand ? 'matching' : 'entry')} onEnter={enter} /> : page === 'detail' && partner ? <PartnerDetailPage home={displayBrand(home)} partner={displayBrand(partner)} relation={ownRelationMap.get(partner.id)} onClose={() => setPage('matching')} onContact={startInvitation} /> : page === 'next' && partner && invitations[invitationKey] ? <CollaborationInvitation localOnly={localOnly} key={invitationKey} home={displayBrand(home)} partner={displayBrand(partner)} invitation={invitations[invitationKey]} dispatch={dispatchInvitation} onBack={() => setPage('detail')} /> : mode === 'draw' ? <DrawPage key={home.id} brands={brands.map(displayBrand)} home={displayBrand(home)} relations={ownRelationMap} onChoose={choosePartner} /> : <>
     <div className="gravity-toolbar"><span>智能匹配 <strong data-testid="current-focus">{focus.name}</strong></span><div><button onClick={goHome}><Icon name="home" /><span>回到我的品牌</span></button><button disabled={selected.id === home.id && focus.id === home.id} onClick={() => selected.id !== focus.id ? onSetFocus(selected.id) : setResetKey(key => key + 1)}><Icon name="reset" /><span>{selected.id === focus.id ? '回到聚焦伙伴' : '聚焦这个伙伴'}</span></button></div></div>
     <main className="workspace">
-      <GravityWorld brands={visibleBrands} focus={focus} positions={positions} relations={relationMap} selectedId={selected.id} resetKey={resetKey} onInspect={onInspect} />
+      <GravityWorld brands={brands} focus={focus} positions={positions} relations={relationMap} selectedId={selected.id} resetKey={resetKey} onInspect={onInspect} />
       <RelationInspector focus={displayBrand(focus)} target={displayBrand(selected)} relation={relationMap.get(selected.id)} count={brands.length} onMatch={selected.id !== home.id ? () => choosePartner(selected.id) : undefined} />
     </main>
     <footer className="discovery-footer"><span>{focus.name} · {visibleRelations.length} 条连接线索{focus.id !== home.id ? ' · 当前查看伙伴的关系' : ''}</span>{missing.length ? <><p>建议上传{home.profile?.gaps.length ? home.profile.gaps.slice(0, 2).map(gap => gap.material).join('、') : missing.slice(0, 3).map(field => field.label).join('、')}，让连接更有依据。</p><button onClick={() => { setEditingBrand(true); setPage('intake'); }}>补充品牌信息<Icon name="arrow" /></button></> : <p>可聚焦其他品牌，探索它的智能连接。</p>}</footer>

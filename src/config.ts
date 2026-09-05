@@ -15,8 +15,7 @@ export const VIEWPORT_LOD_CONFIG = {
   edgeInset: 32,
   detailHalfWidth: 68, detailHalfHeight: 100,
   portraitMinZoom: 0.42,
-  blurredMinZoom: 0.70,
-  fullMinZoom: 1.08,
+  fullMinZoom: 0.74,
   edgeFalloff: 0.52,
 } as const;
 export const VIEW_CONFIG = {

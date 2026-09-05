@@ -22,9 +22,12 @@ describe('Gravity semantic zoom', () => {
     expect(render('blurred')).toContain('wearable-character');
     expect(render('simple')).not.toContain('/100');
     expect(render('full')).toContain('/100');
+    const exploratory = renderToStaticMarkup(createElement(BrandNode, {node: {...node, exploratory: true}, lod: 'full', selected: false, onSelect: () => {}}));
+    expect(exploratory).toContain('待探索');
+    expect(exploratory).not.toContain('/100');
   });
   it('preserves selection and accessible identity across all visible stages', () => {
-    for (const lod of ['marker', 'portrait', 'blurred', 'full'] as const) {
+    for (const lod of ['marker', 'portrait', 'full'] as const) {
       const html = renderToStaticMarkup(createElement(BrandNode, {node, lod, selected: true, onSelect: () => {}}));
       expect(html).toContain('aria-pressed="true"');
       expect(html).toContain(`data-brand-id="${brand.id}"`);

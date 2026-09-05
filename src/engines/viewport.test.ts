@@ -21,7 +21,7 @@ describe('Viewport-driven LOD', () => {
   });
   it('downgrades high-fit nodes and even the focus when they leave the viewport', () => {
     for (const isFocus of [true, false]) {
-      expect(calculateViewportLOD(center, 95, view, size, isFocus)).toBe('blurred');
+      expect(calculateViewportLOD(center, 95, view, size, isFocus)).toBe('full');
       expect(calculateViewportLOD({ x: 5, y: 300 }, 95, view, size, isFocus)).toBe('marker');
       expect(calculateViewportLOD({ x: -100, y: 300 }, 95, view, size, isFocus)).toBe('marker');
       expect(calculateViewportLOD({ x: -300, y: 300 }, 95, view, size, isFocus)).toBe('dormant');
@@ -31,7 +31,7 @@ describe('Viewport-driven LOD', () => {
     const position = { x: 1400, y: 200 };
     expect(calculateViewportLOD(getNodeScreenPosition(position, view, size), 22, view, size)).toBe('dormant');
     const camera = { ...view, x: -position.x * view.zoom, y: -position.y * view.zoom };
-    expect(calculateViewportLOD(getNodeScreenPosition(position, camera, size), 22, camera, size)).toBe('blurred');
+    expect(calculateViewportLOD(getNodeScreenPosition(position, camera, size), 22, camera, size)).toBe('full');
     const zoomed = { x: -position.x * 1.2, y: -position.y * 1.2, zoom: 1.2 };
     expect(calculateViewportLOD(getNodeScreenPosition(position, zoomed, size), 22, zoomed, size)).toBe('full');
     expect(position).toEqual({ x: 1400, y: 200 });
@@ -39,7 +39,7 @@ describe('Viewport-driven LOD', () => {
   it('does not render detailed labels underneath the existing canvas controls', () => {
     const occludedSize = { ...size, occlusions: [{ left: center.x - 30, right: center.x + 30, top: center.y - 30, bottom: center.y + 30 }] };
     expect(calculateViewportLOD(center, 95, view, occludedSize)).toBe('marker');
-    expect(calculateViewportLOD(center, 95, view, size)).toBe('blurred');
+    expect(calculateViewportLOD(center, 95, view, size)).toBe('full');
   });
   it('zooming out limits detail even when all brands fit on screen', () => {
     for (const fit of [0, 22, 50, 72, 95, 100]) {
@@ -59,19 +59,20 @@ describe('Viewport-driven LOD', () => {
     }));
     const before = JSON.stringify(nodes);
     const initial = updateVisibleNodes(nodes, view, size);
-    const primary = [...initial.values()].filter(lod => lod === 'full' || lod === 'blurred' || lod === 'portrait');
+    const primary = [...initial.values()].filter(lod => lod === 'full' || lod === 'portrait');
     expect(primary.length).toBeGreaterThanOrEqual(8);
     expect(primary.length).toBeLessThan(nodes.length);
-    expect([...initial.values()].filter(lod => lod === 'full' || lod === 'blurred').length).toBeLessThanOrEqual(15);
+    expect([...initial.values()].filter(lod => lod === 'full').length).toBeLessThanOrEqual(15);
     expect([...initial.values()]).toContain('dormant');
+    expect([...initial.values()].every(lod => ['full', 'portrait', 'marker', 'dormant'].includes(lod))).toBe(true);
     const farNode = nodes.find(node => initial.get(node.brand.id) === 'dormant')!;
     const explored = updateVisibleNodes(nodes, { ...view, x: -farNode.position.x * view.zoom, y: -farNode.position.y * view.zoom }, size);
-    expect(['portrait', 'blurred', 'full']).toContain(explored.get(farNode.brand.id));
+    expect(['portrait', 'full']).toContain(explored.get(farNode.brand.id));
     expect(lodRank[explored.get(brands[0].id)!]).toBeGreaterThan(lodRank[initial.get(brands[0].id)!]);
     expect(JSON.stringify(nodes)).toBe(before);
   });
   it('exposes every intermediate stage in both zoom directions regardless of fit or focus', () => {
-    const stages = [[0.35, 'marker'], [0.48, 'portrait'], [0.9, 'blurred'], [1.2, 'full']] as const;
+    const stages = [[0.35, 'marker'], [0.48, 'portrait'], [1.2, 'full']] as const;
     for (const fit of [0, 30, 100]) for (const focus of [false, true]) {
       for (const [zoom, expected] of [...stages, ...[...stages].reverse()]) {
         expect(calculateViewportLOD(center, fit, { ...view, zoom }, size, focus)).toBe(expected);
@@ -96,7 +97,7 @@ describe('Viewport-driven LOD', () => {
 
 describe('Readable LOD distances', () => {
   it('reveals intermediate portraits across the field and protects edge labels', () => {
-    expect(calculateViewportLOD(center,80,view,size)).toBe('blurred');
+    expect(calculateViewportLOD(center,80,view,size)).toBe('full');
     expect(calculateViewportLOD({x:size.width*.85,y:center.y},80,view,size)).toBe('portrait');
     expect(calculateViewportLOD({x:45,y:center.y},80,view,size)).toBe('marker');
     expect(calculateViewportLOD({x:center.x,y:size.height-40},80,{...view,zoom:1.2},size)).toBe('marker');
