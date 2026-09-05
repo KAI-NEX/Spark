@@ -17,7 +17,7 @@ export const VIEWPORT_LOD_CONFIG = {
   portraitMinZoom: 0.42,
   blurredMinZoom: 0.70,
   fullMinZoom: 1.08,
-  edgeFalloff: 0.18,
+  edgeFalloff: 0.52,
 } as const;
 export const VIEW_CONFIG = {
   initialZoom: 0.8, narrowInitialZoom: 0.62, minZoom: 0.35, maxZoom: 2, zoomStep: 1.2,

@@ -4,6 +4,7 @@ import type { Brand } from '../domain/types';
 import type { InvitationDraft } from '../domain/invitation';
 import type { Session } from '../../integrations/collider/brand-collider-skills-design/src/collider-types';
 import { Icon } from './Icon';
+import { LoadingIndicator } from './LoadingIndicator';
 
 async function api<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`/api/collider/${path}`, { method: body === undefined ? 'GET' : 'POST', headers: body === undefined ? undefined : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), signal });
@@ -24,7 +25,7 @@ export function ProposalField({ label, field, home, partner, draft, onApply, chi
     catch (reason) { if (!request.signal.aborted) setError(reason instanceof Error ? reason.message : '生成失败，请重试。'); }
     finally { if (!request.signal.aborted) setBusy(false); }
   };
-  return <div className="proposal-field"><div className="proposal-field-heading"><span>{label}</span><button type="button" className="ai-field-button" title="智能生成建议" aria-label={`AI 生成：${label}`} disabled={busy} onClick={() => void generate()}><Icon name="sparkles" />{busy ? <small>生成中</small> : null}</button></div><label><span className="sr-only">{label}</span>{children}</label>{error ? <p className="flow-error" role="alert">{error}</p> : null}{suggestion ? <div className="ai-suggestion"><strong>AI 建议 · 请核对</strong><p>{suggestion}</p><div><button type="button" onClick={() => { onApply(suggestion); setSuggestion(''); }}>采用建议</button><button type="button" onClick={() => setSuggestion('')}>保留我的内容</button></div></div> : null}</div>;
+  return <div className="proposal-field"><div className="proposal-field-heading"><span>{label}</span><button type="button" className="ai-field-button" title="智能生成建议" aria-label={`AI 生成：${label}`} aria-busy={busy} disabled={busy} onClick={() => void generate()}>{busy ? <LoadingIndicator>生成中…</LoadingIndicator> : <Icon name="sparkles" />}</button></div><label><span className="sr-only">{label}</span>{children}</label>{busy ? <p className="ai-loading-note" role="status">正在生成建议，请稍候…</p> : null}{error ? <p className="flow-error" role="alert">{error}</p> : null}{suggestion ? <div className="ai-suggestion"><strong>AI 建议 · 请核对</strong><p>{suggestion}</p><div><button type="button" onClick={() => { onApply(suggestion); setSuggestion(''); }}>采用建议</button><button type="button" onClick={() => setSuggestion('')}>保留我的内容</button></div></div> : null}</div>;
 }
 const asColliderBrand = (brand: Brand) => ({ name: brand.name, description: `品牌定位：${brand.category}\n已有能力：${brand.offers}\n需求：${brand.needs || '待补充'}\n目标：${brand.intent || '待补充'}\n受众：${brand.audience || '待补充'}\n气质：${brand.identity || '待补充'}\n边界：${brand.constraints || '待确认'}`, files: brand.supportingEvidence ? [{ name: '品牌提供的案例与依据.txt', text: brand.supportingEvidence }] : [] });
 export function ColliderProposal({ home, partner, draft, onApply, readOnly = false }: { home: Brand; partner: Brand; draft: InvitationDraft; readOnly?: boolean; onApply: (draft: Pick<InvitationDraft, 'title' | 'concept' | 'contribution' | 'ask'>) => void }) {
@@ -59,10 +60,11 @@ export function ColliderProposal({ home, partner, draft, onApply, readOnly = fal
   const run = async (operation: () => Promise<Session>) => { setBusy(true); setError(''); try { const value = await operation(); if (alive.current) setSession(value); } catch (e) { if (alive.current) setError(e instanceof Error ? e.message : '生成失败。'); } finally { if (alive.current) setBusy(false); } };
   const start = () => { setSession(null); setSource(input); void run(async () => { const created = await api<Session>('sessions', { brands: [asColliderBrand(home), asColliderBrand(partner)], goal: draft.concept || home.intent || `探索 ${home.name} 与 ${partner.name} 的具体联名产物及消费者价值`, constraints: [home.constraints, partner.constraints, draft.contribution && `我方拟投入：${draft.contribution}`, draft.ask && `对对方的邀请：${draft.ask}`, ...draft.diagnostics].filter(Boolean) }); if (alive.current) setSession(created); return api<Session>(`sessions/${created.id}/run`, {}); }); };
   const stale = Boolean(session && source !== input);
+  const generating = busy || session?.status === 'running';
   const selected = session?.concepts.find(concept => concept.id === session.selectedConceptId);
   return <section className="collider-proposal"><div className="collider-heading"><strong>联名提案</strong><span>COLLIDER 提案引擎</span></div><p>研究双方 → 选择方向 → 设计、文案与审查</p>
     {configured === false ? <p className="proposal-note">AI 尚未连接，可先手动填写。模型连接后即可生成完整提案。</p> : null}
-    <button type="button" className="flow-secondary" disabled={readOnly || busy || session?.status === 'running' || configured !== true} onClick={start}><Icon name="sparkles" />{session ? '按当前资料重新生成' : '生成联名提案'}</button>
+    <button type="button" className="flow-secondary" aria-busy={generating} disabled={readOnly || busy || session?.status === 'running' || configured !== true} onClick={start}>{generating ? <LoadingIndicator>正在生成提案…</LoadingIndicator> : <><Icon name="sparkles" />{session ? '按当前资料重新生成' : '生成联名提案'}</>}</button>
     {error ? <p className="flow-error" role="alert">{error}</p> : null}
     {session ? <div className="collider-results"><p role="status">{session.status === 'running' ? `正在推进：${session.activeSkill || '品牌研究'}…` : session.status === 'awaiting_selection' ? '选择一个方向继续深化' : session.status === 'completed' ? '提案已生成，请核对后使用' : session.error || '任务已保留，可继续'} · {session.completedSkills.length}/6</p>
       {stale ? <p className="flow-error">品牌或草稿已修改，以下为上一份简报的结果。请按当前资料重新生成。</p> : null}

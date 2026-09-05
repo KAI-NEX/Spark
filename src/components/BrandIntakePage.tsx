@@ -6,6 +6,7 @@ import type { BrandDocument, ProfileAnalysis } from '../domain/brandProfile';
 import { BrandCharacter } from './BrandCharacter';
 import { BASE_AVATAR, brandWearable } from '../domain/wearables';
 import { Icon } from './Icon';
+import { LoadingIndicator } from './LoadingIndicator';
 
 export const materialFingerprint = (docs: readonly BrandDocument[]) => JSON.stringify(docs.map(doc=>[doc.id,doc.name,doc.text,doc.visualRef]));
 const fileBase64 = (file: File) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = () => reject(new Error('文件读取失败')); reader.readAsDataURL(file); });
@@ -75,6 +76,7 @@ export function BrandIntakePage({ onBack, onEnter, initialBrand, localOnly = fal
   const gaps = analysis?.profile.gaps ?? [{ field: 'offers', material: '品牌介绍、产品目录或近期案例', reason: '识别品牌名称、已有产品和核心能力。' }, {field:'identity',material:'产品实物图、材质与视觉规范',reason:'还原产品颜色、质感和穿着方式；图片可与文字说明一起导入。'}, {field:'audience',material:'用户场景、合作案例与本期目标',reason:'帮助判断和什么伙伴合作，以及产品为谁解决问题。'}];
   const update = (key: keyof typeof emptyIntake, value: string) => setAnalysis(current => current ? { ...current, fields: { ...current.fields, [key]: value }, profile: { ...current.profile, evidence: current.profile.evidence.filter(ref => ref.field !== key), accessoryEvidence: undefined, accessoryReview: undefined, wearable: undefined } } : current);
   const enter = () => { if (!analysis) return; try { const value = onEnter(brandFromProfile(analysis, initialBrand)); if (value) setErrors([value]); } catch (error) { setErrors([(error as Error).message]); } };
+  const busyLabel = busy === 'reading' ? '正在读取资料…' : busy === 'dressing' ? '正在生成角色…' : '正在理解品牌…';
   return <main className="intake-page upload-first-page compact-intake">
     <button className="page-close" onClick={onBack} aria-label="返回"><Icon name="back" /></button>
     <div className="intake-layout"><section className="upload-workspace" aria-label="品牌材料上传">
@@ -82,20 +84,20 @@ export function BrandIntakePage({ onBack, onEnter, initialBrand, localOnly = fal
         <Icon name="upload"/><h1>把品牌资料放在这里</h1><p>多文件一起导入</p>
         <small>最多 10 份 · 文字每份 8 MB · 最多 3 张产品图，每张 6 MB</small>
         <small>{localOnly ? '实验支持 TXT / MD / JSON · 由本机服务交给 Codex 理解，不存入品牌库。' : 'PDF / Word / TXT / MD / JSON / PNG / JPG / WebP'}</small>
-        <button className="flow-primary" disabled={Boolean(busy)} onClick={()=>inputRef.current?.click()}>导入品牌资料</button>
+        <button className="flow-primary" aria-busy={Boolean(busy)} disabled={Boolean(busy)} onClick={()=>inputRef.current?.click()}>{busy ? <LoadingIndicator>{busyLabel}</LoadingIndicator> : '导入品牌资料'}</button>
         <small className="upload-caption">导入资料，生成你的品牌角色。</small>
         <input ref={inputRef} type="file" multiple accept={localOnly ? '.txt,.md,.json' : '.pdf,.docx,.txt,.md,.json,.png,.jpg,.jpeg,.webp'} aria-label="上传多个品牌文件" className="sr-only" disabled={Boolean(busy)} onChange={event=>{if(event.target.files)void upload(event.target.files);event.target.value='';}}/>
       </div>
       {documents.length ? <details className="material-file-menu"><summary>已导入 {documents.length} 份文件 <span>查看 / 管理</span></summary><ul className="material-list">{documents.map(doc=><li key={doc.id}><Icon name="document"/><div><strong>{doc.name}</strong><small>{doc.visualRef ? '产品参考图' : `${doc.text.length.toLocaleString()} 字`}</small></div><button disabled={Boolean(busy)} aria-label={`移除 ${doc.name}`} onClick={()=>{setDocuments(current=>current.filter(item=>item.id!==doc.id));setStatus('资料已变更，请重新生成角色。');}}><Icon name="close"/></button></li>)}</ul></details> : null}
       {status ? <p className="material-status" role="status">{status}</p> : null}
       {errors.map(error=><p key={error} role="alert" className="flow-error">{error}</p>)}
-      {generatedFiles ? <div className="material-actions"><button className="flow-secondary" disabled={!filesChanged || Boolean(busy)} onClick={()=>void analyze()}>{busy ? '正在生成…' : '重新生成角色'}<Icon name="regenerate"/></button><small>{filesChanged ? '使用更新后的文件生成' : '更改文件后可重新生成'}</small></div> : null}
+      {generatedFiles ? <div className="material-actions"><button className="flow-secondary" aria-busy={Boolean(busy)} disabled={!filesChanged || Boolean(busy)} onClick={()=>void analyze()}>{busy ? <LoadingIndicator>{busyLabel}</LoadingIndicator> : <>重新生成角色<Icon name="regenerate"/></>}</button><small>{filesChanged ? '使用更新后的文件生成' : '更改文件后可重新生成'}</small></div> : null}
       {configured===true ? <small className="intake-connection">{providerName}已连接 · 资料理解</small> : null}
       {configured===false ? <small className="intake-connection">AI 尚未连接 · 当前为基础识别与穿搭示意</small> : null}
       {analysis ? <details className="material-understanding compact-understanding"><summary>材料中识别到的内容 <span>{INTAKE_FIELDS.filter(field=>analysis.fields[field.key]).length} 个栏目 · 点击核对</span></summary>
         <div className="editable-material-fields">{INTAKE_FIELDS.map(field=><details key={field.key}><summary>{field.label}<span>{analysis.fields[field.key] ? '已识别 · 编辑' : '待补充'}</span></summary><label>{field.label}<textarea disabled={Boolean(busy)} rows={field.key==='name'?1:3} maxLength={field.max} value={analysis.fields[field.key]} placeholder={field.placeholder} onChange={event=>update(field.key,event.target.value)}/></label></details>)}</div>
       </details> : null}
-    </section><aside className="material-portrait"><div className="profile-avatar">{preview ? <BrandCharacter brand={preview} labelled/> : <img className="character base-character" src={BASE_AVATAR} alt="基础角色"/>}</div><h2>{preview?.name || '一个角色，穿上你的品牌。'}</h2>
+    </section><aside className="material-portrait" aria-busy={Boolean(busy)}><div className="profile-avatar">{preview ? <BrandCharacter brand={preview} labelled/> : <img className="character base-character" src={BASE_AVATAR} alt="基础角色"/>}</div>{busy ? <p className="portrait-loading" role="status"><LoadingIndicator>{busyLabel}</LoadingIndicator></p> : null}<h2>{preview?.name || '一个角色，穿上你的品牌。'}</h2>
       {look ? <div className="intake-equipment"><strong>{look.label}</strong></div> : null}
       <section className="next-material"><h3>补充这些，让角色与连接更具体</h3>{gaps.map((gap,index)=><div key={`${gap.field}-${index}`}><Icon name="document"/><div><strong>{gap.material}</strong><p>{gap.reason}</p></div></div>)}</section>
     </aside></div>

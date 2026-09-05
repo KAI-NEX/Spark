@@ -3,7 +3,7 @@ import type { Brand, LOD, RelationResult, SceneNode, SpatialPosition } from '../
 import { GRAVITY_BANDS, VIEW_CONFIG } from '../config';
 import { fitToDistance } from '../engines/gravity';
 import { gravityPresentationScale } from '../engines/gravityPresentation';
-import { updateVisibleNodes } from '../engines/viewport';
+import { getNodeScreenPosition, resolveLODOverlap, updateVisibleNodes } from '../engines/viewport';
 import { useViewport } from '../hooks/useViewport';
 import { BrandNode } from './BrandNode';
 import { Icon } from './Icon';
@@ -35,15 +35,18 @@ export const GravityWorld = memo(function GravityWorld({ brands, focus, position
   const nodeLOD = useMemo(() => {
     const levels = new Map(updateVisibleNodes(nodes, view, size));
     const focusLevel = levels.get(focus.id);
-    if (view.zoom >= .6 && focusLevel !== 'dormant' && focusLevel !== 'marker') levels.set(focus.id, 'full');
-    return levels;
+    const focal = nodes.find(node => node.isFocus);
+    const screen = focal ? getNodeScreenPosition(focal.position, view, size) : null;
+    const fullFits = screen && screen.x >= 76 && screen.x <= size.width - 76 && screen.y >= 108 && screen.y <= size.height - 108 && !size.occlusions?.some(box => screen.x + 68 > box.left && screen.x - 68 < box.right && screen.y + 100 > box.top && screen.y - 100 < box.bottom);
+    if (fullFits && view.zoom >= .6 && focusLevel !== 'dormant' && focusLevel !== 'marker') levels.set(focus.id, 'full');
+    return resolveLODOverlap(nodes, levels, view, size);
   }, [nodes, view, size, focus.id]);
   const counts: Record<LOD, number> = { full: 0, blurred: 0, simple: 0, portrait: 0, signature: 0, marker: 0, dormant: 0 };
   for (const lod of nodeLOD.values()) counts[lod]++;
   const selectedPosition = displayPositions.find(position => position.brandId === selectedId);
   const showConnection = selectedId !== focus.id && nodeLOD.get(selectedId) !== 'dormant' && selectedPosition;
 
-  return <section className={`canvas-shell ${brands.length <= 7 ? 'sparse-world' : ''} ${dragging ? 'is-dragging' : ''}`} aria-label="品牌引力空间" data-world-width={VIEW_CONFIG.worldWidth} data-world-height={VIEW_CONFIG.worldHeight}>
+  return <section className={`canvas-shell ${size.width <= 640 ? 'narrow-world' : ''} ${brands.length <= 7 ? 'sparse-world' : ''} ${dragging ? 'is-dragging' : ''}`} aria-label="品牌引力空间" data-world-width={VIEW_CONFIG.worldWidth} data-world-height={VIEW_CONFIG.worldHeight}>
     <div className="canvas-intro"><h1>选择一个伙伴。</h1><p>点击品牌，探索它的伙伴。</p></div>
     <div ref={canvasRef} className="canvas" data-testid="canvas" {...handlers}>
       <div ref={worldRef} className="world" data-testid="world">

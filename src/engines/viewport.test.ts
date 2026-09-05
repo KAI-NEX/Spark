@@ -3,7 +3,7 @@ import { generateMockBrands } from '../data/mockBrands';
 import { mockDataSource } from '../data/source';
 import type { LOD, SceneNode } from '../domain/types';
 import { calculateGravityPositions } from './gravity';
-import { calculateViewportLOD, constrainViewport, getNodeScreenPosition, getViewportBounds, updateVisibleNodes } from './viewport';
+import { resolveLODOverlap, calculateViewportLOD, constrainViewport, getNodeScreenPosition, getViewportBounds, updateVisibleNodes } from './viewport';
 
 const view = { x: 0, y: 0, zoom: 0.8 };
 const size = { width: 1171, height: 938 };
@@ -91,5 +91,29 @@ describe('Viewport-driven LOD', () => {
     expect(constrained.x).toBeGreaterThan(size.width / 2);
     expect(constrained.x).toBeLessThan(2000);
     expect(constrained.y).toBeGreaterThan(-2000);
+  });
+});
+
+describe('Readable LOD distances', () => {
+  it('reveals intermediate portraits across the field and protects edge labels', () => {
+    expect(calculateViewportLOD(center,80,view,size)).toBe('blurred');
+    expect(calculateViewportLOD({x:size.width*.85,y:center.y},80,view,size)).toBe('portrait');
+    expect(calculateViewportLOD({x:45,y:center.y},80,view,size)).toBe('marker');
+    expect(calculateViewportLOD({x:center.x,y:size.height-40},80,{...view,zoom:1.2},size)).toBe('marker');
+  });
+});
+
+
+describe('LOD overlap resolution', () => {
+  it('keeps the focal character readable and reduces crowded neighbors without relocating them', () => {
+    const brands=generateMockBrands().slice(0,3);
+    const nodes=brands.map((brand,i)=>({brand,isFocus:i===0,fit:100-i*20,position:{brandId:brand.id,x:i*70,y:0,radius:i*70}}));
+    const before=JSON.stringify(nodes);
+    const levels=new Map(nodes.map(node=>[node.brand.id,'full' as LOD]));
+    const result=resolveLODOverlap(nodes,levels,view,size);
+    expect(result.get(brands[0].id)).toBe('full');
+    expect(result.get(brands[1].id)).toBe('marker');
+    expect(JSON.stringify(nodes)).toBe(before);
+    expect([...levels.values()]).toEqual(['full','full','full']);
   });
 });

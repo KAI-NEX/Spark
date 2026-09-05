@@ -23,15 +23,15 @@ export function calculateViewportLOD(screen: { x: number; y: number }, _fit: num
   const dy = Math.max(0, -screen.y, screen.y - size.height);
   if (Math.hypot(dx, dy) > LOD_CONFIG.dormantMargin) return 'dormant';
   if (screen.x < LOD_CONFIG.edgeInset || screen.y < LOD_CONFIG.edgeInset || screen.x > size.width - LOD_CONFIG.edgeInset || screen.y > size.height - LOD_CONFIG.edgeInset) return 'marker';
-  const halfWidth = LOD_CONFIG.detailHalfWidth, halfHeight = LOD_CONFIG.detailHalfHeight;
-  if (size.occlusions?.some(bounds => screen.x + halfWidth > bounds.left && screen.x - halfWidth < bounds.right && screen.y + halfHeight > bounds.top && screen.y - halfHeight < bounds.bottom)) return 'marker';
+  const halfWidth = LOD_CONFIG.detailHalfWidth;
 
   const distanceFromCenter = Math.max(Math.abs(screen.x - size.width / 2) / (size.width / 2), Math.abs(screen.y - size.height / 2) / (size.height / 2));
   // Screen scale controls disclosure; relation scores do not decide who is readable.
   const effectiveZoom = view.zoom * (1 - LOD_CONFIG.edgeFalloff * distanceFromCenter ** 2);
-  if (effectiveZoom >= LOD_CONFIG.fullMinZoom) return 'full';
-  if (effectiveZoom >= LOD_CONFIG.blurredMinZoom) return 'blurred';
-  if (effectiveZoom >= LOD_CONFIG.portraitMinZoom) return 'portrait';
+  const fits = (halfHeight: number, width: number = halfWidth) => screen.x >= width + 8 && screen.x <= size.width - width - 8 && screen.y >= halfHeight + 8 && screen.y <= size.height - halfHeight - 8 && !size.occlusions?.some(bounds => screen.x + width > bounds.left && screen.x - width < bounds.right && screen.y + halfHeight > bounds.top && screen.y - halfHeight < bounds.bottom);
+  if (effectiveZoom >= LOD_CONFIG.fullMinZoom && fits(100)) return 'full';
+  if (effectiveZoom >= LOD_CONFIG.blurredMinZoom && fits(78)) return 'blurred';
+  if (effectiveZoom >= LOD_CONFIG.portraitMinZoom && fits(42, size.width <= 640 ? 46 : halfWidth)) return 'portrait';
   return 'marker';
 }
 
@@ -55,4 +55,29 @@ export function constrainViewport(view: Viewport, size: ViewportSize): Viewport 
   const limitX = Math.max(0, VIEW_CONFIG.worldWidth * view.zoom / 2 - size.width / 2 + VIEW_CONFIG.panPadding);
   const limitY = Math.max(0, VIEW_CONFIG.worldHeight * view.zoom / 2 - size.height / 2 + VIEW_CONFIG.panPadding);
   return { ...view, x: Math.max(-limitX, Math.min(limitX, view.x)), y: Math.max(-limitY, Math.min(limitY, view.y)) };
+}
+
+
+/** Reserve readable space from the center outward. Only disclosure changes, never location or fit. */
+export function resolveLODOverlap(nodes: readonly SceneNode[], levels: ReadonlyMap<string, LOD>, view: Viewport, size: ViewportSize): ReadonlyMap<string, LOD> {
+  const result = new Map(levels);
+  const occupied: { x: number; y: number; halfWidth: number; halfHeight: number }[] = [];
+  const priority = nodes.map(node => ({ node, screen: getNodeScreenPosition(node.position, view, size) })).sort((a,b) =>
+    Number(b.node.isFocus) - Number(a.node.isFocus) ||
+    Math.hypot(a.screen.x-size.width/2,a.screen.y-size.height/2) - Math.hypot(b.screen.x-size.width/2,b.screen.y-size.height/2) || a.node.brand.id.localeCompare(b.node.brand.id));
+  for (const {node, screen} of priority) {
+    let lod = result.get(node.brand.id) ?? 'dormant';
+    if (lod === 'dormant' || lod === 'marker') continue;
+    const stages: LOD[] = lod === 'full' ? ['full','blurred','portrait','marker'] : lod === 'blurred' ? ['blurred','portrait','marker'] : [lod,'marker'];
+    for (const stage of stages) {
+      lod = stage;
+      if (stage === 'marker') break;
+      const halfWidth = stage === 'portrait' && size.width <= 640 ? 46 : 68, halfHeight = stage === 'full' ? 100 : stage === 'blurred' ? 78 : 42;
+      if (!occupied.some(box => Math.abs(screen.x-box.x) < halfWidth+box.halfWidth+6 && Math.abs(screen.y-box.y) < halfHeight+box.halfHeight+6)) {
+        occupied.push({...screen,halfWidth,halfHeight}); break;
+      }
+    }
+    result.set(node.brand.id,lod);
+  }
+  return result;
 }

@@ -98,11 +98,35 @@ pnpm build
 
 ## 本轮检查结果 / Verification
 
-108 项自动化测试、TypeScript、完整 ESLint 与 Vite 构建通过。浏览器检查包括桌面端和 390px 手机端：首页文案、嵌套栏目、无边框返回、抽卡收回后换卡、无编号详情导航、网页真实 AI 建议生成与采用。实验邀请页无框架错误层、无控制台错误或警告。手机端页面宽度与视口均为 390px。
+110 项自动化测试、TypeScript、完整 ESLint 与 Vite 构建通过。浏览器检查包括桌面端和 390px 手机端：首页文案、嵌套栏目、无边框返回、抽卡收回后换卡、无编号详情导航、网页真实 AI 建议生成与采用。实验邀请页无框架错误层、无控制台错误或警告。手机端页面宽度与视口均为 390px。
 
-108 automated tests, TypeScript, full ESLint and Vite build passed. Browser checks cover desktop and 390px mobile entry, nested disclosures, borderless back actions, sequential card reveals, removed numbered navigation and real AI suggestion adoption. No relevant console errors/warnings or framework overlay were observed.
+110 automated tests, TypeScript, full ESLint and Vite build passed. Browser checks cover desktop and 390px mobile entry, nested disclosures, borderless back actions, sequential card reveals, removed numbered navigation and real AI suggestion adoption. No relevant console errors/warnings or framework overlay were observed.
 
 
 最新视觉回归：Chrome / Playwright，1280 × 900 与 390 × 844。连续交替开合 12 次，并测试 3 次手机端开合、开卡中途返回、Esc、动画中途改变窗口尺寸、减少动态效果。源卡与收回末帧的四项几何误差均低于 1px。密集与稀疏 Gravity、聚焦切换、缩放、无框导入页均通过。页面非空，无框架错误覆盖层和控制台错误。浏览器测试脚本与截图位于仓库外；当前未安装独立 Browser 技能，使用现有 Playwright + Chrome。Safari / iOS 尚未复测。本轮未改动 AI 提供方，也未重新跑完整 AI 提案。
 
 Latest visual regression: Chrome / Playwright at 1280 × 900 and 390 × 844. Twelve alternating card cycles plus three mobile cycles passed, including interrupted opening, Escape, resizing and reduced motion. Return-frame geometry matches the source within 1px. Dense/sparse Gravity, focus, zoom and the single-surface intake passed, with no blank page, framework overlay or console errors. Temporary QA scripts/screenshots stay outside the repository. The standalone Browser skill was unavailable; existing Playwright and Chrome were used. Safari / iOS remain untested. AI provider logic was not changed or revalidated end to end in this refinement.
+
+
+## 首页轮换、LOD 与加载状态 / Entry Rotation, LOD & Loading
+
+首页按不同穿搭去重后轮换，采用交叉淡入淡出；标题上沿与虚化角色顶部对齐，去掉首页顶栏横线并收紧顶部留白。减少动态效果设置下停止自动轮换。
+
+The entry cycles through distinct concept outfits with cross-fades. The heading aligns with the blurred figure top, with a compact header and no header rule. Automatic cycling stops under reduced motion.
+
+LOD 增强从中心向边缘的细节衰减；按完整角色、虚化角色和头像的尺寸检查边缘与控件遮挡。密集节点按中心优先保留可读空间，拥挤时降级显示，原位置、匹配分数和权重不变。窄画布使用紧凑头像标签。
+
+LOD now checks each stage against canvas edges and controls, then reserves readable space from the center outward. Crowded nodes reduce detail rather than move or change score. Narrow canvases use compact portrait labels.
+
+上传、重新生成角色、AI 字段建议与完整提案按钮均显示旋转图标、中文阶段文字及 aria-busy，并在等待期间禁用重复提交；错误或成功后恢复。没有虚构百分比进度。
+
+Upload, regeneration, field suggestions and full proposal controls show a spinner, stage text and aria-busy while pending. They prevent duplicate submission and recover after success/failure, without fabricated percentage progress.
+
+本次视觉验证使用 Chrome / Playwright，检查 1280×900、390×844，以及初始、放大、缩小、平移等 10 种 LOD 场景；未发现带名称节点重叠或裁切。加载测试用可控延迟的模拟响应覆盖等待、成功采用和失败恢复，不代表重新验证了真实模型输出。110 项单元测试、类型检查、ESLint 与构建通过。截图和测试脚本保留于仓库外 `/tmp/brand-lod-loading-qa/`。
+
+Chrome / Playwright covered desktop/mobile and ten zoom/pan/sparse-scene scenarios without overlapping or clipped named nodes. Loading tests used controlled delayed mock responses to verify pending, adoption and recovery; live model quality was not re-tested. All 110 unit tests, type checking, ESLint and build passed. Temporary visual QA evidence stays outside the repository.
+
+
+窗口尺寸改变时曾发现节点位置的 650ms CSS 过渡与即时 LOD 判定不同步，导致过渡中的标签裁切；现已取消引力节点的独立位置过渡，让位置与层级使用同一快照。镜头导航仍沿用原有动画。稀疏和密集场景均纳入最后复测。
+
+Resize testing caught a mismatch between a 650ms position transition and immediate LOD updates. The independent node-position transition is now removed so layout and disclosure use the same snapshot. Existing camera navigation remains animated. Final checks include sparse and dense fields.

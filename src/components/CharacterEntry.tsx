@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Brand } from '../domain/types';
-import { BrandCharacter } from './BrandCharacter';
+import { WearableCharacter } from './WearableCharacter';
+import { drawWearable } from '../domain/drawWardrobe';
 import { Icon } from './Icon';
 
 export function CharacterEntry({ brands, example, onCreate }: { brands: readonly Brand[]; example: Brand; onCreate: () => void }) {
-  const possibilities = brands.filter(brand => brand.id !== example.id).slice(0, 9);
+  const possibilities = useMemo(() => [...new Map(brands.map(brand => [drawWearable(brand).url, brand])).values()], [brands]);
   const [index, setIndex] = useState(0);
-  const mystery = possibilities[index % Math.max(1, possibilities.length)] ?? example;
   useEffect(() => {
     if (possibilities.length < 2) return;
-    const timer = window.setInterval(() => setIndex(value => value + 1), 2200);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const timer = window.setInterval(() => { if (!document.hidden && !reduced.matches) setIndex(value => value + 1); }, 3200);
     return () => window.clearInterval(timer);
   }, [possibilities.length]);
   return <main className="character-entry">
@@ -20,7 +21,7 @@ export function CharacterEntry({ brands, example, onCreate }: { brands: readonly
       </div>
     </section>
     <section className="entry-stage mystery-stage" aria-label="正在出现的品牌角色">
-      <div className="entry-avatar mystery-character" key={`${mystery.id}-${index}`}><BrandCharacter brand={mystery} /></div>
+      <div className="entry-avatar mystery-character" aria-hidden="true">{(possibilities.length ? possibilities : [example]).map((brand, position) => <div className="mystery-variant" data-active={position === index % Math.max(1, possibilities.length)} key={brand.id}><WearableCharacter brand={brand} look={drawWearable(brand)} /></div>)}</div>
       <span className="mystery-mark" aria-hidden="true">?</span>
     </section>
     <footer className="entry-footer"><span>01 / 品牌理解</span><span>品牌 → 角色 → 匹配 → 合作</span><a href="?view=lab">形象实验室 ↗</a></footer>

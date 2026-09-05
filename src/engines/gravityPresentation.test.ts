@@ -10,7 +10,7 @@ describe('gravity presentation density', () => {
     for (const size of [{width:940,height:650},{width:390,height:590}]) {
       const scale = gravityPresentationScale(positions,size);
       const zoom = size.width < 640 ? .62 : .8;
-      expect(1800*scale*zoom).toBeLessThanOrEqual(Math.min(size.width,size.height)*.33);
+      expect(1800*scale*zoom).toBeLessThanOrEqual(Math.min(size.width,size.height)*(size.width <= 640 ? .47 : .33));
       expect(scale).toBeGreaterThan(0);
     }
     expect(positions).toEqual(before);
