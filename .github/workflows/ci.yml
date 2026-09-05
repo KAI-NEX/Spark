@@ -1,48 +1,12 @@
 name: Validate
-on: [push, pull_request, workflow_dispatch]
+on: [push, pull_request]
 permissions:
   contents: read
 jobs:
-  bootstrap:
-    if: github.event_name != 'pull_request' && github.repository == 'KAI-NEX/brand-relations-demo' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - name: Expand the audited initial source package once
-        shell: bash
-        run: |
-          if [ -f package.json ]; then exit 0; fi
-          echo '5894401cbc3fa549955a37d8008e88dc1ba912a0138c86e7b8f61eb5fee38aa1  brand-relations-demo-source.zip' | sha256sum --check
-          python3 - <<'PY'
-          from pathlib import Path, PurePosixPath
-          import zipfile
-          prefix = 'brand-relations-demo/'
-          with zipfile.ZipFile('brand-relations-demo-source.zip') as archive:
-              for entry in archive.infolist():
-                  assert entry.filename.startswith(prefix)
-                  relative = PurePosixPath(entry.filename[len(prefix):])
-                  assert not relative.is_absolute() and '..' not in relative.parts
-                  if not relative.parts or entry.is_dir() or relative.parts[0] == '.github':
-                      continue
-                  target = Path(str(relative))
-                  target.parent.mkdir(parents=True, exist_ok=True)
-                  target.write_bytes(archive.read(entry))
-          PY
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src server public docs examples README.md LICENSE .gitignore .env.example package.json pnpm-lock.yaml pnpm-workspace.yaml eslint.config.js index.html tsconfig.json vite.config.ts
-          git commit -m 'Publish verified Brand Relations source tree'
-          git push origin HEAD:main
   checks:
-    needs: bootstrap
-    if: always() && (needs.bootstrap.result == 'success' || needs.bootstrap.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'pull_request' && github.ref || github.ref_name }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
