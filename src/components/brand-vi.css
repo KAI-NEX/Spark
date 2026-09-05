@@ -18,7 +18,7 @@
 .flow-error { border-left: 3px solid #2457F5; padding-left: 12px; }
 .flow-shell .brand-info-entry { border: 1px solid #111111; border-radius: 12px; background: #FFFFFF; }
 .flow-shell .brand-info-entry:hover { border-color: #2457F5; }
-.entry-stage-ring,.flow-shell .mystery-mark { border-color: #111111; background: #FFFFFF; }
+.entry-stage-ring { border-color: #111111; background: #FFFFFF; }
 .flow-shell .mode-switch { background: #FFFFFF; border-color: #111111; border-radius: 12px; }
 .flow-shell .mode-switch button[aria-pressed=true],.flow-shell .draw-dialog-deck button[aria-pressed=true],.flow-shell .perspective-switch button[aria-pressed=true] { color: #FFFFFF; background: #2457F5; border-color: #2457F5; }
 .flow-shell .inspector,.flow-shell .discovery-footer,.flow-shell .partner-contact,.flow-shell .proposal-visual { background: #FFFFFF; border-color: #111111; }
@@ -293,3 +293,38 @@
   .editable-material-fields summary { flex-wrap: wrap; gap: 6px; }
   .editable-material-fields label { margin-left: 8px; }
 }
+
+/* A single upload surface; hierarchy comes from whitespace and rules. */
+.compact-intake .upload-workspace,
+.compact-intake .material-portrait { border: 0; border-radius: 0; padding: 0; background: transparent; box-shadow: none; }
+.compact-intake .intake-layout { gap: clamp(28px,5vw,72px); }
+.compact-intake .material-portrait { padding: 0 12px; }
+.compact-intake .material-dropzone { min-height: 330px; justify-content: center; border-color: #b1b6c0; background: #f7f8fa80; }
+.compact-intake .material-understanding { padding-top: 0; }
+.compact-intake .editable-material-fields { border-left: 0; }
+.compact-intake .editable-material-fields > details[open] { background: transparent; border-left: 0; }
+.compact-intake .editable-material-fields > details[open] > summary { color: #2457f5; }
+.compact-intake .editable-material-fields textarea { border: 0; border-bottom: 1px solid #bfc4cc; border-radius: 0; background: #f7f8fa; }
+.flow-shell .mystery-mark { background: transparent; background-image: none; border: 0; border-radius: 0; box-shadow: none; }
+.flow-shell .mystery-mark::before,.flow-shell .mystery-mark::after { content: none; }
+@media(max-width:640px) {
+  .compact-intake .material-portrait { padding: 0; }
+  .compact-intake .material-dropzone { padding-inline: 16px; }
+}
+
+/* The returning face uses the source card's exact layout, not a second approximation. */
+.flow-shell .draw-card:not(:disabled):hover { transform: none; }
+.flow-shell .draw-dialog-back { padding: 0; border: 0; background: transparent; }
+.flow-shell .draw-dialog-back > .draw-face {
+  inset: auto; left: 50%; top: 50%; width: var(--source-width); height: var(--source-height);
+  transform: translate(-50%,-50%) scale(var(--back-sx),var(--back-sy));
+  transform-origin: center; box-sizing: border-box;
+}
+.flow-shell .draw-dialog-back .character { width: 85%; height: 80%; }
+.flow-shell .draw-dialog-motion { will-change: transform; }
+.flow-shell .draw-dialog-content,.flow-shell .draw-dialog-back,.flow-shell .draw-face { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.flow-shell .draw-dialog.is-closing::backdrop { animation: card-backdrop-out 540ms ease-out both; }
+@keyframes card-backdrop-out { to { background: #ffffff00; backdrop-filter: blur(0); } }
+@media(prefers-reduced-motion:reduce) { .flow-shell .draw-dialog.is-closing::backdrop { animation: none; } }
+
+.flow-shell .draw-page { margin: 0 auto; }

@@ -9,7 +9,7 @@
 This local brand collaboration demo connects entry, intake, Gravity discovery, cards, partner details and invitation preview. UI copy is Chinese; brand names and file formats retain their original spelling.
 
 - 首页标题：「先理解你的品牌，再开始寻找联名伙伴。」取消角色下方说明，统一网格与左对齐。
-- 导入页：多文件导入；文件管理和识别栏目折叠；展开后以缩进、分隔线和底色区分栏目与字段。
+- 导入页：多文件导入；文件管理和识别栏目折叠；去掉外层框与框中框，以缩进、分隔线和文字颜色区分栏目与字段；底部按钮仅写「进入引力匹配」，不带箭头。
 - 重新生成：第一次导入自动理解；之后文件改变才启用重新生成，手动字段修正不触发模型。
 - 导航：页面返回使用无边框箭头。文件移除按钮仍为删除语义。抽卡页无左上角退出按钮，通过模式图标切换。
 - 抽卡：删除多余提示，详情不再显示 01／02／03 导航；返回时翻转收回，然后可翻其他卡牌。
@@ -17,6 +17,19 @@ This local brand collaboration demo connects entry, intake, Gravity discovery, c
 - 28 个内置品牌的显示文案与关系解释中文化；原始匹配快照保留，展示翻译不参与分数计算。
 
 The latest pass refines the entry slogan, nested intake disclosures, borderless back navigation and simplified card details. Four LOD stages remain. Chinese presentation does not change scoring inputs or weights.
+
+## 交互精修 / Interaction Refinement
+
+- 首页问号使用透明底，无背景、边框或伪元素填充。
+- Gravity 使用随画布尺寸变化的统一展示缩放，保留原位置的方向和距离排序；资料少时不再默认缩至 35%。聚焦品牌显示完整角色，其他节点继续按 LOD 切换。原始评分、权重、连接筛选数量均未改变。
+- 抽卡新增咖啡围裙、户外夹克、创意针织三张静态概念素材，结合原有围巾、外套、包袋形成六种示意穿搭。内置品牌按固定映射展示；原始参考图保留，用户上传品牌不会被套入虚构产品证据。素材位于 `public/avatars/draw-v3/`，仅用于抽卡展示。
+- 抽卡放大与收回共用同一角色面。收回以 `animationend` 完成，不使用固定计时器；末帧按源卡真实尺寸和位置对齐，同时淡出遮罩。支持开卡中途返回、窗口尺寸改变及减少动态效果设置。
+
+The question mark has no backdrop. Gravity uses a responsive, uniform presentation scale that preserves angles and distance ordering without altering scores, weights or discovery counts. Sparse scenes no longer start at 35%; the central brand remains a full character.
+
+Three static concept assets add coffee, outdoor and creative outfits to the existing scarf, jacket and bag variants. These are authored demo presentations, not verified products or a newly connected image-generation API. Original references remain intact, and uploaded brands are not assigned fictional product evidence.
+
+Cards now share the same character-face layout across the deck and modal. The return completes on the actual animation-end event, aligns with the source card, and fades the backdrop. Interrupted openings, responsive resizing and reduced motion are supported.
 
 ## 本地 Codex / Local Codex
 
@@ -85,6 +98,11 @@ pnpm build
 
 ## 本轮检查结果 / Verification
 
-104 项自动化测试、TypeScript、完整 ESLint 与 Vite 构建通过。浏览器检查包括桌面端和 390px 手机端：首页文案、嵌套栏目、无边框返回、抽卡收回后换卡、无编号详情导航、网页真实 AI 建议生成与采用。实验邀请页无框架错误层、无控制台错误或警告。手机端页面宽度与视口均为 390px。
+108 项自动化测试、TypeScript、完整 ESLint 与 Vite 构建通过。浏览器检查包括桌面端和 390px 手机端：首页文案、嵌套栏目、无边框返回、抽卡收回后换卡、无编号详情导航、网页真实 AI 建议生成与采用。实验邀请页无框架错误层、无控制台错误或警告。手机端页面宽度与视口均为 390px。
 
-104 automated tests, TypeScript, full ESLint and Vite build passed. Browser checks cover desktop and 390px mobile entry, nested disclosures, borderless back actions, sequential card reveals, removed numbered navigation and real AI suggestion adoption. No relevant console errors/warnings or framework overlay were observed.
+108 automated tests, TypeScript, full ESLint and Vite build passed. Browser checks cover desktop and 390px mobile entry, nested disclosures, borderless back actions, sequential card reveals, removed numbered navigation and real AI suggestion adoption. No relevant console errors/warnings or framework overlay were observed.
+
+
+最新视觉回归：Chrome / Playwright，1280 × 900 与 390 × 844。连续交替开合 12 次，并测试 3 次手机端开合、开卡中途返回、Esc、动画中途改变窗口尺寸、减少动态效果。源卡与收回末帧的四项几何误差均低于 1px。密集与稀疏 Gravity、聚焦切换、缩放、无框导入页均通过。页面非空，无框架错误覆盖层和控制台错误。浏览器测试脚本与截图位于仓库外；当前未安装独立 Browser 技能，使用现有 Playwright + Chrome。Safari / iOS 尚未复测。本轮未改动 AI 提供方，也未重新跑完整 AI 提案。
+
+Latest visual regression: Chrome / Playwright at 1280 × 900 and 390 × 844. Twelve alternating card cycles plus three mobile cycles passed, including interrupted opening, Escape, resizing and reduced motion. Return-frame geometry matches the source within 1px. Dense/sparse Gravity, focus, zoom and the single-surface intake passed, with no blank page, framework overlay or console errors. Temporary QA scripts/screenshots stay outside the repository. The standalone Browser skill was unavailable; existing Playwright and Chrome were used. Safari / iOS remain untested. AI provider logic was not changed or revalidated end to end in this refinement.

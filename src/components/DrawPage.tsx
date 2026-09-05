@@ -1,7 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { flushSync } from 'react-dom';
 import type { Brand, RelationResult } from '../domain/types';
-import { BrandCharacter } from './BrandCharacter';
+import { WearableCharacter } from './WearableCharacter';
+import { drawWearable } from '../domain/drawWardrobe';
 import { Icon } from './Icon';
 
 export function shuffleBrands(brands: readonly Brand[], ownId: string): Brand[] {
@@ -14,46 +16,66 @@ export function DrawPage({ brands, home, relations, onChoose }: { brands: readon
   const [deck, setDeck] = useState(() => shuffleBrands(brands, home.id));
   const [selected, setSelected] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardRefs = useRef(new Map<string, HTMLButtonElement>());
   const [round, setRound] = useState(0);
   const dialog = useRef<HTMLDialogElement>(null);
   const chosen = deck.find(brand => brand.id === selected);
   const relation = selected ? relations.get(selected) : undefined;
-  const reveal = (id: string) => { if (closing || selected === id) return; setSelected(id); };
+  const reveal = (id: string) => {
+    if (closing || selected === id) return;
+    // Finish the deal before measuring; otherwise the return target keeps moving.
+    for (const card of cardRefs.current.values()) for (const animation of card.getAnimations()) animation.finish();
+    setSelected(id);
+  };
   useLayoutEffect(() => {
     if (!selected || !dialog.current) return;
     const modal = dialog.current;
     if (!modal.open) modal.showModal();
-    const source = cardRefs.current.get(selected)?.getBoundingClientRect();
-    const target = modal.getBoundingClientRect();
-    if (source) {
-      modal.style.setProperty('--card-dx', `${source.x + source.width / 2 - target.x - target.width / 2}px`);
-      modal.style.setProperty('--card-dy', `${source.y + source.height / 2 - target.y - target.height / 2}px`);
-      modal.style.setProperty('--card-sx', String(source.width / target.width));
-      modal.style.setProperty('--card-sy', String(source.height / target.height));
-    }
+    const measure = () => {
+      const source = cardRefs.current.get(selected)?.getBoundingClientRect();
+      const target = modal.getBoundingClientRect();
+      if (source) {
+        modal.style.setProperty('--card-dx', `${source.x + source.width / 2 - target.x - target.width / 2}px`);
+        modal.style.setProperty('--card-dy', `${source.y + source.height / 2 - target.y - target.height / 2}px`);
+        modal.style.setProperty('--card-sx', String(source.width / target.width));
+        modal.style.setProperty('--card-sy', String(source.height / target.height));
+        modal.style.setProperty('--source-width', `${source.width}px`);
+        modal.style.setProperty('--source-height', `${source.height}px`);
+        modal.style.setProperty('--back-sx', String(target.width / source.width));
+        modal.style.setProperty('--back-sy', String(target.height / source.height));
+      }
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(modal);
+    const card = cardRefs.current.get(selected);
+    if (card) observer.observe(card);
+    return () => observer.disconnect();
   }, [selected]);
-  useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
+  const finishDismiss = () => {
+    dialog.current?.close();
+    flushSync(() => { setSelected(null); setClosing(false); });
+    if (selected) cardRefs.current.get(selected)?.focus({ preventScroll: true });
+  };
   const dismiss = () => {
-    if (closing) return;
+    if (closing || !selected) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { finishDismiss(); return; }
     const motion=dialog.current?.querySelector<HTMLElement>('.draw-dialog-motion');
     if(motion) motion.style.setProperty('--close-transform',getComputedStyle(motion).transform);
     setClosing(true);
-    closeTimer.current = setTimeout(() => { dialog.current?.close(); setSelected(null); setClosing(false); }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 560);
   };
   return <main className="draw-page" aria-label="抽卡匹配页面">
     <div className="draw-heading"><h1>下一位伙伴，会是谁？</h1></div>
     <div className="draw-table" key={round}>
       {deck.map((brand, index) => <button key={brand.id} style={{ '--deal-index': index } as CSSProperties} ref={element => { if (element) cardRefs.current.set(brand.id, element); else cardRefs.current.delete(brand.id); }} className={`draw-card ${selected === brand.id ? 'is-revealing' : ''}`} onClick={() => reveal(brand.id)} aria-label={`翻开第 ${index + 1} 张卡`}>
-        <span className="draw-card-body"><span className="draw-face draw-back" aria-hidden="true"><span className="draw-card-number">品牌角色</span><BrandCharacter brand={brand} /></span>
+        <span className="draw-card-body"><DrawCharacterFace brand={brand} />
         <span className="draw-face draw-front" aria-hidden="true"><span className="draw-card-number">品牌资料</span><strong>{brand.name}</strong><span>{brand.category}</span><span className="draw-front-summary">{brand.summary}</span><span>查看品牌资料 ↗</span></span></span>
       </button>)}
     </div>
     <button className="flow-secondary draw-again" onClick={() => { setDeck(shuffleBrands(brands, home.id)); setSelected(null); setRound(value => value + 1); }}>重新洗牌</button>
     <p className="draw-note">随机探索 · 评价仅供参考</p>
-    <dialog ref={dialog} className={`draw-dialog ${closing ? 'is-closing' : ''}`} aria-labelledby="draw-dialog-title" onCancel={event => { event.preventDefault(); dismiss(); }} onClose={() => setSelected(null)} onClick={event => { if (event.target === event.currentTarget) dismiss(); }}>
-      {chosen ? <div className="draw-dialog-motion" key={chosen.id}><div className="draw-dialog-back" aria-hidden="true"><span>品牌资料</span><BrandCharacter brand={chosen} /></div><div className="draw-dialog-content">
+    <dialog ref={dialog} className={`draw-dialog ${closing ? 'is-closing' : ''}`} aria-labelledby="draw-dialog-title" onCancel={event => { event.preventDefault(); dismiss(); }} onClick={event => { if (event.target === event.currentTarget) dismiss(); }}>
+      {chosen ? <div className="draw-dialog-motion" key={chosen.id} onAnimationEnd={event => { if (closing && event.target === event.currentTarget && event.animationName === 'spring-card-close') finishDismiss(); }}><div className="draw-dialog-back" aria-hidden="true"><DrawCharacterFace brand={chosen} /></div><div className="draw-dialog-content">
         <button className="page-close" autoFocus onClick={dismiss} aria-label="返回卡牌"><Icon name="back" /></button>
         <div className="draw-dialog-scroll"><p className="mono">品牌资料</p><h2 id="draw-dialog-title">{chosen.name}</h2><p>{chosen.category}</p><p className="draw-dialog-score">{relation ? `${relation.collaborationFit} / 100 · 智能评价` : '资料待补充'}</p>
         <dl>{([['品牌介绍', chosen.summary], ['已有能力', chosen.offers], ['寻找什么', chosen.needs], ['联名目标', chosen.intent], ['目标消费者', chosen.audience], ['品牌气质', chosen.identity], ['合作边界', chosen.constraints], ['案例与依据', chosen.supportingEvidence], ['合作可能', relation?.reason]] as const).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value || '待补充'}</dd></div>)}</dl></div>
@@ -61,4 +83,8 @@ export function DrawPage({ brands, home, relations, onChoose }: { brands: readon
       </div></div> : null}
     </dialog>
   </main>;
+}
+
+function DrawCharacterFace({ brand }: { brand: Brand }) {
+  return <span className="draw-face draw-back" aria-hidden="true"><span className="draw-card-number">品牌角色</span><WearableCharacter brand={brand} look={drawWearable(brand)} /></span>;
 }

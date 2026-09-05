@@ -99,7 +99,7 @@ export function BrandIntakePage({ onBack, onEnter, initialBrand, localOnly = fal
       {look ? <div className="intake-equipment"><strong>{look.label}</strong></div> : null}
       <section className="next-material"><h3>补充这些，让角色与连接更具体</h3>{gaps.map((gap,index)=><div key={`${gap.field}-${index}`}><Icon name="document"/><div><strong>{gap.material}</strong><p>{gap.reason}</p></div></div>)}</section>
     </aside></div>
-    <footer className="upload-footer intake-return">{analysis ? <><button className="flow-primary" disabled={!analysis.fields.name.trim() || Boolean(busy) || materialFingerprint(documents)!==generatedFiles} onClick={enter}>{initialBrand ? '返回引力匹配' : '进入引力匹配'}<Icon name="arrow"/></button>{!analysis.fields.name.trim() ? <small>展开识别内容，补充品牌名称即可继续。</small> : null}</> : <p>资料可以慢慢补充，先从一次相遇开始。</p>}</footer>
+    <footer className="upload-footer intake-return">{analysis ? <><button className="flow-primary" disabled={!analysis.fields.name.trim() || Boolean(busy) || materialFingerprint(documents)!==generatedFiles} onClick={enter}>进入引力匹配</button>{!analysis.fields.name.trim() ? <small>展开识别内容，补充品牌名称即可继续。</small> : null}</> : <p>资料可以慢慢补充，先从一次相遇开始。</p>}</footer>
   </main>;
 }
 async function readLocalDemoDocument(file: File): Promise<BrandDocument> {
