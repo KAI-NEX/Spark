@@ -1,0 +1,3 @@
+[submodule "integrations/collider"]
+	path = integrations/collider
+	url = https://github.com/gifted-professor/brand.git
