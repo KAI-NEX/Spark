@@ -8,14 +8,19 @@ import { Icon } from './Icon';
 import { BrandVisualKey } from './BrandVisualKey';
 import { BrandCharacter } from './BrandCharacter';
 
-export function shuffleBrands(brands: readonly Brand[], ownId: string): Brand[] {
+export function shuffleBrands(brands: readonly Brand[], ownId: string, preferredId?: string): Brand[] {
   const pool = brands.filter(brand => brand.id !== ownId);
   for (let i = pool.length - 1; i > 0; i--) { const random = crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296; const j = Math.floor(random * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-  return pool.slice(0, 3);
+  const preferred = preferredId ? pool.find(brand => brand.id === preferredId) : undefined;
+  if (!preferred) return pool.slice(0, 3);
+  const hand = pool.filter(brand => brand.id !== preferred.id).slice(0, 2);
+  const index = Math.floor(crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296 * (hand.length + 1));
+  hand.splice(index, 0, preferred);
+  return hand;
 }
 
-export function DrawPage({ brands, home, relations, onChoose }: { brands: readonly Brand[]; home: Brand; relations: ReadonlyMap<string, RelationResult>; onChoose: (id: string) => void }) {
-  const [deck, setDeck] = useState(() => shuffleBrands(brands, home.id));
+export function DrawPage({ brands, home, relations, preferredId, onChoose }: { brands: readonly Brand[]; home: Brand; relations: ReadonlyMap<string, RelationResult>; preferredId?: string; onChoose: (id: string) => void }) {
+  const [deck, setDeck] = useState(() => shuffleBrands(brands, home.id, preferredId));
   const [selected, setSelected] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
   const cardRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -80,8 +85,8 @@ export function DrawPage({ brands, home, relations, onChoose }: { brands: readon
         <span className="draw-face draw-front" aria-hidden="true"><span className="draw-card-number">品牌资料</span><strong>{brand.name}</strong><span>{brand.category}</span><span className="draw-front-summary">{brand.summary}</span><span>查看品牌资料 ↗</span></span></span>
       </button>)}
     </div>
-    <button className="flow-secondary draw-again" onClick={() => { setDeck(shuffleBrands(brands, home.id)); setSelected(null); setRound(value => value + 1); }}>重新洗牌</button>
-    <p className="draw-note">随机探索 · 评价仅供参考</p>
+    <button className="flow-secondary draw-again" onClick={() => { setDeck(shuffleBrands(brands, home.id, preferredId)); setSelected(null); setRound(value => value + 1); }}>重新洗牌</button>
+    <p className="draw-note">本期最高匹配 + 2 个随机品牌 · 评价仅供参考</p>
     <dialog ref={dialog} className={`draw-dialog ${closing ? 'is-closing' : ''}`} aria-labelledby="draw-dialog-title" onCancel={event => { event.preventDefault(); dismiss(); }} onClick={event => { if (event.target === event.currentTarget) dismiss(); }}>
       {chosen ? <div className="draw-dialog-motion" key={chosen.id} onAnimationEnd={event => { if (closing && event.target === event.currentTarget && event.animationName === 'spring-card-close') finishDismiss(); }}><div className="draw-dialog-back" aria-hidden="true"><DrawCharacterFace brand={chosen} /></div><div className="draw-dialog-content">
         <button className="page-close" autoFocus onClick={dismiss} aria-label="返回卡牌"><Icon name="back" /></button>

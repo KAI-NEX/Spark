@@ -4,6 +4,7 @@ import { WearableCharacter } from './WearableCharacter';
 import { drawWearable } from '../domain/drawWardrobe';
 import { deriveBrandAppearance } from '../domain/brandAppearance';
 import { Icon } from './Icon';
+import { JourneyFooter } from './JourneyFooter';
 
 export function CharacterEntry({ brands, example, onCreate }: { brands: readonly Brand[]; example: Brand; onCreate: () => void }) {
   const possibilities = useMemo(() => [...new Map(brands.map(brand => [deriveBrandAppearance(brand).props[0]?.id ?? brand.id, brand])).values()], [brands]);
@@ -21,10 +22,10 @@ export function CharacterEntry({ brands, example, onCreate }: { brands: readonly
         <button className="brand-info-entry" type="button" onClick={onCreate}><Icon name="upload" /><span><strong>上传你的品牌信息</strong><small>自动生成专属角色</small></span><Icon name="arrow" /></button>
       </div>
     </section>
-    <section className="entry-stage mystery-stage" aria-label="正在出现的品牌角色">
-      <div className="entry-avatar mystery-character" aria-hidden="true">{(possibilities.length ? [possibilities[index % possibilities.length]] : [example]).map((brand) => <div className="mystery-variant" data-active="true" key={brand.id}><WearableCharacter brand={brand} look={drawWearable(brand)} /></div>)}</div>
+    <section className="entry-stage mystery-stage" aria-label="等待生成的品牌 IP">
+      <div className="entry-avatar mystery-character" aria-hidden="true">{(possibilities.length ? [possibilities[index % possibilities.length]] : [example]).map(brand => <div className="mystery-variant" data-active="true" key={brand.id}><WearableCharacter brand={brand} look={drawWearable(brand)} /></div>)}</div>
       <span className="mystery-mark" aria-hidden="true">?</span>
     </section>
-    <footer className="entry-footer"><span>01 / 品牌理解</span><span>品牌 → 角色 → 匹配 → 渠道预演</span><a href="?view=cases">查看主要案例 ↗</a><a href="?view=lab">形象实验室 ↗</a></footer>
+    <JourneyFooter current="upload" />
   </main>;
 }

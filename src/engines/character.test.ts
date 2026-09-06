@@ -71,7 +71,7 @@ describe('Evidence-based character capabilities', () => {
     expect(calculateMockRelation(source, brand('form-works'))).toEqual(calculateMockRelation({ ...source, characterSeed: 999999 }, brand('form-works')));
   });
   it('unmounts dormant artwork, uses one span at marker LOD and removes texture at simple LOD', () => {
-    const render = (lod: 'full' | 'simple' | 'marker' | 'dormant') => renderToStaticMarkup(createElement(BrandCharacter, { brand: brands[0], lod }));
+    const render = (lod: 'full' | 'simple' | 'marker' | 'dormant') => renderToStaticMarkup(createElement(BrandCharacter, { brand: brand('memory-block'), lod }));
     expect(render('dormant')).toBe('');
     expect(render('marker')).not.toContain('<svg');
     expect(render('marker').match(/<span/g)).toHaveLength(1);

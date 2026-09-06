@@ -16,8 +16,17 @@ export interface Brand {
   characterSeed: number;
   character?: CharacterRecipe;
   avatarDataUrl?: string;
+  /** Stable source identity for presentation-only name localization. */
+  visualSeed?: string;
   evidence?: string;
   supportingEvidence?: string;
+  contact?: {
+    label: string;
+    email?: string;
+    wechat?: string;
+    website?: string;
+    note: string;
+  };
 }
 
 export const RELATION_TYPES = [

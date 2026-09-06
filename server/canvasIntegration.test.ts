@@ -33,13 +33,13 @@ describe('original COLLIDER canvas integration', () => {
   it('carries each original VI and both distinct channel images into native canvas nodes', async () => {
     const saved = await project();
     const result = await fetch(`${base}/api/production/projects/${saved.id}`).then(response => response.json());
-    expect(result.brandNames).toEqual(['早八咖啡', '留白书店']);
+    expect(result.brandNames).toEqual(['库迪咖啡', '奶龙']);
     expect(result.assets).toHaveLength(2);
     expect(new Set(result.assets.map((asset: { url: string }) => asset.url)).size).toBe(2);
     expect(result.nodes.filter((node: { kind: string }) => node.kind === 'image').every((node: { status: string }) => node.status === 'unverified')).toBe(true);
     expect(canvasBrief(saved).constraints.join('')).toContain('不合并两套 VI');
-    expect(canvasBrief(saved).brands[0].files[0].text).toContain('#C94B32');
-    expect(canvasBrief(saved).brands[1].files[0].text).toContain('#274A3C');
+    expect(canvasBrief(saved).brands[0].files[0].text).toContain('#D52127');
+    expect(canvasBrief(saved).brands[1].files[0].text).toContain('#F6C900');
     expect((await store.get(saved.id)).invitation.status).toBe('draft');
   });
   it('runs and revises dialogue through the original HTTP router and runtime, with export and restore', async () => {
@@ -57,7 +57,7 @@ describe('original COLLIDER canvas integration', () => {
     expect(completed.proposal?.imageUrl).toBeUndefined();
     const exported = await fetch(`${base}/api/sessions/${session.id}/export`);
     expect(exported.headers.get('content-type')).toContain('text/markdown');
-    expect(await exported.text()).toContain('早八咖啡');
+    expect(await exported.text()).toContain('库迪咖啡');
     const restored = new ColliderRuntime({ cwd: resolve('integrations/collider/brand-collider-skills-design'), outputDir: join(directory, 'sessions') });
     await restored.init(); expect(restored.get(session.id).revision).toBe(2); await restored.shutdown();
     // Session changes never overwrite the saved source brief or template files.

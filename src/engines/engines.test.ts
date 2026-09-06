@@ -12,15 +12,25 @@ const brand = (id: string) => brands.find(item => item.id === id)!;
 const relation = (a: string, b: string) => calculateMockRelation(brand(a), brand(b));
 
 describe('Mock snapshot and relation contracts', () => {
-  it('provides 40 complete uniquely identified snapshots and repeatable regeneration', () => {
-    expect(brands).toHaveLength(40);
-    expect(new Set(brands.map(item => item.id)).size).toBe(40);
+  it('provides 40 fictional snapshots plus two complete public demo profiles', () => {
+    expect(brands).toHaveLength(42);
+    expect(brands.filter(item => item.fictional)).toHaveLength(40);
+    expect(new Set(brands.map(item => item.id)).size).toBe(42);
     for (const item of brands) {
       for (const key of ['id', 'name', 'summary', 'offers', 'needs', 'intent', 'audience', 'identity', 'constraints'] as const) expect(item[key].length).toBeGreaterThan(0);
       expect(Number.isFinite(item.characterSeed)).toBe(true);
     }
     expect(generateMockBrands(3)).toEqual(generateMockBrands(3));
     expect(generateMockBrands(2).map(item => item.intent)).not.toEqual(brands.map(item => item.intent));
+  });
+  it('makes 奶龙 the strongest data-driven match for 库迪咖啡 with usable public contact details', () => {
+    const cotti = brand('cotti-coffee');
+    const ranked = [...mockDataSource.getRelations(cotti, brands)].sort((a, b) => b.collaborationFit - a.collaborationFit);
+    expect(ranked[0].targetBrandId).toBe('nailong');
+    expect(ranked[0].collaborationFit).toBeGreaterThanOrEqual(85);
+    expect(ranked[0].possibleOutcome).toContain('主题饮品');
+    expect(cotti.contact?.email).toBe('MKT@COTTICOFFEE.COM');
+    expect(brand('nailong').contact?.email).toBe('dqyx@dqyx.net');
   });
   it('is deterministic for every pair, bounded, and weights sum to one', () => {
     expect(Object.values(RELATION_WEIGHTS).reduce((a, b) => a + b)).toBeCloseTo(1);
@@ -87,7 +97,7 @@ describe('Gravity layout', () => {
     for (const focus of brands) {
       const relations = mockDataSource.getRelations(focus, brands);
       const positions = calculateGravityPositions(focus.id, relations);
-      expect(positions).toHaveLength(39);
+      expect(positions).toHaveLength(brands.length - 1);
       expect(positions).toEqual(calculateGravityPositions(focus.id, [...relations].reverse()));
       for (const position of positions) expect(Math.hypot(position.x, position.y)).toBeCloseTo(position.radius);
       const scores = new Map(relations.map(relation => [relation.targetBrandId, relation.collaborationFit]));

@@ -1,6 +1,7 @@
 import type { Brand } from '../domain/types';
 import { hash } from '../domain/hash';
 import { fictionalProducts } from './fictionalProducts';
+import { demoAnchorBrands } from './demoBrands';
 
 // The natural-language snapshot is the boundary. No hidden pair-score table.
 type Fixture = [string, string, string, string, string, string, string, string, string?];
@@ -69,5 +70,5 @@ export function generateMockBrands(seed = 1): Brand[] {
     constraints: constraints ?? 'Open to pilots and cross-border collaboration. No size or geographic restrictions.',
     characterSeed: hash(`${seed}:${id}`),
   }));
-  return generated;
+  return [...demoAnchorBrands(seed), ...generated];
 }

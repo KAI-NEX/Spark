@@ -27,7 +27,7 @@
 
 案例照片来自本项目已有的内置图像生成结果；每次创建生成的 SVG 是确定性品牌版式，标为“模板预演”。本轮文字调用使用原 runtime 与本机配置的模型。没有图片 API / 看图能力时不会启动逐件自动出图与视觉验收。用户真实上传的 VI 缺失时显示中性占位与待补充说明，不把平台虚拟视觉当成其官方 VI。
 
-本地文件保存在 `outputs/brand-relations-projects`、`outputs/collider-sessions`、`outputs/canvas-links`，均不纳入 git。不要并行启动两个会写入同一会话目录的 API 进程。当前提交包含主仓库与 COLLIDER 子模块的本地代码提交；推送时需先使子模块提交可由团队访问。
+本地文件保存在 `outputs/brand-relations-projects`、`outputs/collider-sessions`、`outputs/canvas-links`，均不纳入 git。不要并行启动两个会写入同一会话目录的 API 进程。当前提交包含主仓库与 COLLIDER 子模块的本地代码提交；集成版画板提交发布在 `KAI-NEX/brand-relations-demo` 的 `collider-integration` 分支，主仓库固定引用该提交；递归克隆即可获取完整源码。
 
 ## 验证
 

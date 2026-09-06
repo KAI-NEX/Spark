@@ -68,7 +68,7 @@ export function brandFromProfile(analysis: ProfileAnalysis, initial?: Brand): Br
   const fields = analysis.fields;
   if (!fields.name.trim()) throw new Error('只需确认品牌名称，即可先开始探索。');
   const brand = candidateBrand(fields, createLocalCandidates(fields)[0], initial?.id ?? `company-${crypto.randomUUID()}`);
-  return { ...brand, ...fields, ...(initial?.id.startsWith('lab-') ? {avatarDataUrl:initial.avatarDataUrl} : {}), summary: fields.category || '品牌资料正在逐步完善。', profile: { ...analysis.profile, accessoryEvidence: analysis.profile.accessoryEvidence?.map(item => ({ ...item, subjectBrandId: item.subjectBrandId === 'current-brand' || item.subjectBrandId === initial?.id ? brand.id : item.subjectBrandId })) } };
+  return { ...brand, ...fields, ...(initial ? { fictional: initial.fictional, contact: initial.contact, evidence: initial.evidence, visualSeed: initial.visualSeed, avatarDataUrl: initial.id.startsWith('lab-') || (initial.name === fields.name && initial.identity === fields.identity) ? initial.avatarDataUrl : undefined } : {}), summary: initial?.category === fields.category ? initial.summary : fields.category || '品牌资料正在逐步完善。', profile: { ...analysis.profile, accessoryEvidence: analysis.profile.accessoryEvidence?.map(item => ({ ...item, subjectBrandId: item.subjectBrandId === 'current-brand' || item.subjectBrandId === initial?.id ? brand.id : item.subjectBrandId })) } };
 }
 export function profileCoverage(brand: Brand) {
   const keys = ['category', 'offers', 'needs', 'intent', 'audience', 'identity', 'constraints', 'supportingEvidence'] as const;

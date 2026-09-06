@@ -1,9 +1,9 @@
 # Brand Relations · 品牌发现与渠道预演
 
-当前主流程：品牌资料与角色 → Gravity / 抽卡 → 申请建联 → 原 COLLIDER 无限画板 → 对话生成、修订与导出。平台使用蓝、黑、白的统一 VI，双方渠道内容各自沿用发布方的品牌视觉，只增加合作方署名与内容互荐。
+当前主流程：品牌资料与角色 → 引力匹配 / 抽卡 → 申请建联 → 原 COLLIDER 无限画板 → 对话生成、修订与导出。平台使用蓝、黑、白的统一 VI，双方渠道内容各自沿用发布方的品牌视觉，只增加合作方署名与内容互荐。
 
 - 首页 `/`：居中 Logo 和角色入口。
-- 主要案例 `/?view=cases`：早八咖啡 × 留白书店，虚构的一对一渠道互荐案例。
+- 主要案例 `/?view=cases`：库迪咖啡 × 奶龙，一对一渠道互荐的演示案例，双方各自保留原有品牌视觉。
 - 联名项目 `/#projects`：保存在本机的项目与历史预演。
 - 原画板 `/canvas.html?relation=<project-id>`：自动带入双方资料、两张模板预演和可恢复的原生对话会话。旧 `/#project=<id>` 链接自动转入画板。
 - 原参考案例保留在 `/?view=legacy-cases`；历史四步工作台源文件保留，已退出主流程。
@@ -26,15 +26,20 @@
 
 ## 本地运行
 
-需要 Node.js 22.12+（本次使用 24.19）和 pnpm。
+需要 Node.js 24+ 和 pnpm 10.11.0。
 
 ```sh
-git submodule update --init --recursive
+git clone --recurse-submodules https://github.com/KAI-NEX/brand-relations-demo.git
+cd brand-relations-demo
 pnpm install
 pnpm dev
 ```
 
 打开 http://127.0.0.1:5173/ 。本地服务只绑定 loopback。
+
+现有检出更新后请执行 `git submodule sync --recursive && git submodule update --init --recursive`。画板源码保存在同一仓库的 `collider-integration` 分支，主分支通过固定子模块提交引用；同事原始项目来源保留在接入记录中。
+
+资料页 `/#intake` 已预置库迪的 8 份品牌资料和 9 个栏目，可以直接进入品牌角色页，再探索 42 个内置品牌。库迪 × 奶龙的两张预生成渠道图随源码提供，不依赖本机历史会话；申请建联后进入原画板对话。实际生成、审批与发布仍须由双方确认。
 
 ```sh
 pnpm typecheck

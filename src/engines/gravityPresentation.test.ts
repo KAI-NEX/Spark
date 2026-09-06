@@ -18,7 +18,8 @@ describe('gravity presentation density', () => {
   });
   it('preserves ranking and direction for the full fixture population', () => {
     const brands = mockDataSource.loadBrands(1);
-    const positions = calculateGravityPositions(brands[0].id,mockDataSource.getRelations(brands[0],brands));
+    const focus = brands.find(brand => brand.id === 'memory-block')!;
+    const positions = calculateGravityPositions(focus.id,mockDataSource.getRelations(focus,brands));
     const scale = gravityPresentationScale(positions,{width:940,height:650});
     const sorted = [...positions].sort((a,b)=>a.radius-b.radius);
     for (let i=1;i<sorted.length;i++) expect(sorted[i].radius*scale).toBeGreaterThanOrEqual(sorted[i-1].radius*scale);
@@ -31,14 +32,15 @@ describe('gravity presentation density', () => {
 describe('Scatter within a detail level', () => {
   it('retains a broad depth range within portraits instead of placing them on one ring', () => {
     const brands = mockDataSource.loadBrands(1);
-    const relations = mockDataSource.getRelations(brands[0], brands);
-    const positions = calculateGravityPositions(brands[0].id, relations);
+    const focus = brands.find(brand => brand.id === 'memory-block')!;
+    const relations = mockDataSource.getRelations(focus, brands);
+    const positions = calculateGravityPositions(focus.id, relations);
     const size = { width: 1152, height: 794 };
     const view = { x: 0, y: 0, zoom: .8 };
     const scale = gravityPresentationScale(positions, size);
     const nodes = brands.map(brand => {
       const raw = positions.find(position => position.brandId === brand.id);
-      return { brand, isFocus: brand.id === brands[0].id, fit: relations.find(relation => relation.targetBrandId === brand.id)?.collaborationFit ?? 100,
+      return { brand, isFocus: brand.id === focus.id, fit: relations.find(relation => relation.targetBrandId === brand.id)?.collaborationFit ?? 100,
         position: { brandId: brand.id, x: (raw?.x ?? 0)*scale, y: (raw?.y ?? 0)*scale, radius: (raw?.radius ?? 0)*scale } };
     });
     const levels = resolveLODByDistance(nodes, updateVisibleNodes(nodes, view, size), view, size);

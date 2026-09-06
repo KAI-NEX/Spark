@@ -1,3 +1,4 @@
 [submodule "integrations/collider"]
 	path = integrations/collider
-	url = https://github.com/gifted-professor/brand.git
+	url = https://github.com/KAI-NEX/brand-relations-demo.git
+	branch = collider-integration

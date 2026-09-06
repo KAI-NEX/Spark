@@ -9,7 +9,7 @@
   --surface-subtle: #f7f9fc;
   --surface-accent: #f3f6ff;
   --control-border: #cdd3df;
-  --control-radius: 10px;
+  --control-radius: 12px;
   color: var(--ink);
   font-size: 14px;
   line-height: 1.6;
@@ -175,6 +175,11 @@
 .flow-shell .partner-profile dl div { border-color: var(--line); grid-template-columns: 88px minmax(0, 1fr); padding-block: 16px; }
 .flow-shell .partner-profile dt { font-size: 12px; }
 .flow-shell .partner-profile dd { font-size: 14px; line-height: 1.8; }
+.flow-shell .partner-public-contact { margin-top: 26px; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-subtle); }
+.flow-shell .partner-public-contact h2 { margin-bottom: 10px; }
+.flow-shell .partner-contact-links { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; line-height: 1.8; }
+.flow-shell .partner-contact-links a { color: var(--flow-accent); text-decoration: underline; text-underline-offset: 3px; }
+.flow-shell .partner-public-contact p { margin-top: 10px; color: var(--muted); font-size: 11px; line-height: 1.7; }
 .flow-shell .partner-caveat { color: var(--muted) !important; background: var(--surface-subtle); border-left: 2px solid #ccd5e8; padding: 14px 16px; border-radius: 0 8px 8px 0; }
 .flow-shell .partner-contact { background: #fff; border: 0; border-top: 1px solid var(--line); padding: 20px 0; gap: 24px; }
 .flow-shell .partner-contact strong { font-size: 15px; overflow-wrap: anywhere; }

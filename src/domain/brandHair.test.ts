@@ -5,7 +5,7 @@ import { HAIRSTYLES } from './hairstyles';
 import { generateMockBrands } from '../data/mockBrands';
 import { displayBrand } from './chinese';
 
-const base=generateMockBrands()[0];
+const base=generateMockBrands().find(brand=>brand.id==='memory-block')!;
 describe('content-driven hair with separate capability equipment',()=>{
   it('responds to a changed brand category and product, not only the name',()=>{
     const coffee=deriveBrandAppearance({...base,name:'新品牌',category:'咖啡品牌',identity:'温暖、日常',offers:'我们制作咖啡杯。'});
@@ -31,7 +31,7 @@ describe('content-driven hair with separate capability equipment',()=>{
     expect(look.hairLook.color.id).toBe('lavender');expect(look.hair).toBe('long-straight');
   });
   it('offers varied, translation-stable looks for the forty fictional companies',()=>{
-    const brands=generateMockBrands();const looks=brands.map(deriveBrandAppearance);
+    const brands=generateMockBrands().filter(brand=>brand.fictional);const looks=brands.map(deriveBrandAppearance);
     expect(HAIRSTYLES).toHaveLength(16);expect(HAIR_COLORS).toHaveLength(18);
     expect(new Set(looks.map(look=>look.hair)).size).toBeGreaterThanOrEqual(12);
     expect(new Set(looks.map(look=>look.hairLook.color.hex)).size).toBeGreaterThanOrEqual(13);

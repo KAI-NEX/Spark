@@ -7,7 +7,9 @@ describe('Chinese presentation boundary',()=>{
     const brands=generateMockBrands();const before=JSON.stringify(brands);
     for(const brand of brands){
       const shown=displayBrand(brand);
-      expect(shown.id).toBe(brand.id);expect(shown.name).toBe(brand.name);
+      expect(shown.id).toBe(brand.id);
+      if(brand.fictional) expect(shown.name).toMatch(/[\u4e00-\u9fff]/);
+      else expect(shown.name).toBe(brand.name);
       for(const field of ['category','offers','needs','intent','audience','identity','constraints'] as const){
         expect(shown[field]).toMatch(/[\u4e00-\u9fff]/);
         expect(shown[field]).not.toMatch(/[a-z]{3,}/i);

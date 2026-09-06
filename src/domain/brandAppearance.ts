@@ -60,7 +60,7 @@ const palettes = [
 ] as const;
 
 export function deriveBrandAppearance(brand: Brand) {
-  const identity = hash(brand.name.normalize('NFKC').trim().replace(/\s+/gu,' ').toLowerCase());
+  const identity = hash((brand.visualSeed ?? brand.name).normalize('NFKC').trim().replace(/\s+/gu,' ').toLowerCase());
   const clauses = currentOwnClauses(brand.offers).flatMap(clause=>clause.split(/[，,、]|\band\b|以及|和|与/iu)).map(clause=>clause.trim()).filter(Boolean);
   const candidates: VisualProp[] = [];
   for (const clause of clauses) {

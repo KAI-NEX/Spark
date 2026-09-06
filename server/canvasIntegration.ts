@@ -9,6 +9,7 @@ import type { ColliderRuntime } from '../integrations/collider/brand-collider-sk
 import type { ProductionProject, ProductionNode } from '../integrations/collider/brand-collider-skills-design/src/production-types';
 import type { Project } from '../src/collaboration/model';
 import { currentPreview } from '../src/collaboration/model';
+import { PRELOADED_COTTI_NAILONG_PROJECT_ID } from '../src/collaboration/preloadedProject';
 import { ProjectStore } from './projectsApi';
 import type { createColliderService } from './colliderApi';
 
@@ -27,7 +28,7 @@ export function canvasBrief(project: Project, prompt = '') {
       '只做一对一品牌受众互荐，沿用各自成熟的视觉体系；每张图以发布方为主，只加入合作方署名和既有产品或内容。不开发新商品，不合并两套 VI。',
       '核心交付仅两张 4:5 渠道预演及对应发布文案。保持双方投入对等，资源数量与实际合作均待确认。',
       '当前只是建联意向。资料中的邀请状态不代表真实发送、品牌授权或对方同意。',
-      '虚构品牌资料是演示设定；未提供的 VI、商标和实物应标注待补充，不自行编造。模板预演不是实时 AI 出图。',
+      '生成品牌样本只用于丰富演示；公开品牌资料仍需品牌方确认。未提供的 VI、商标和实物应标注待补充，不自行编造。模板预演不是实时 AI 出图。',
       `已有提案：${JSON.stringify(project.invitation.draft)}`,
       ...(prompt ? [prompt] : []),
     ],
@@ -44,14 +45,20 @@ export function productionProject(project: Project): ProductionProject {
   for (const side of ['a', 'b'] as const) {
     const { brand, visual } = project.brands[side];
     nodes.push({ id: `${project.id}-brand-${side}`, kind: 'document', lane: 'strategy', title: `${brand.name} · 品牌与 VI`,
-      summary: brand.summary, content: `${brand.offers}\n受众：${brand.audience}\n视觉：${visual.source === 'unprovided' ? '尚未提供，当前图仅为版式占位' : `沿用 ${visual.wordmark}，主色 ${visual.background} / ${visual.foreground}`}\n资料来源：${brand.fictional ? '虚构演示品牌' : '用户提供，尚未核验'}`,
+      summary: brand.summary, content: `${brand.offers}\n受众：${brand.audience}\n视觉：${visual.source === 'unprovided' ? '尚未提供，当前图仅为版式占位' : `沿用 ${visual.wordmark}，主色 ${visual.background} / ${visual.foreground}`}\n资料来源：${brand.fictional ? '生成的概念品牌样本' : '公开品牌资料快照，待品牌确认'}`,
       status: 'available', assetIds: [], sources: [{ label: '已保存的品牌资料' }], displayOrder: side === 'a' ? 1 : 2 });
+    if (brand.contact) nodes.push({ id: `${project.id}-contact-${side}`, kind: 'document', lane: 'strategy', title: `${brand.name} · 建联入口`,
+      summary: `${brand.contact.label} · 公开信息，发送前复核`,
+      content: [`联系人类型：${brand.contact.label}`, brand.contact.website ? `官网：${brand.contact.website}` : '', brand.contact.email ? `邮箱：${brand.contact.email}` : '', brand.contact.wechat ? `微信：${brand.contact.wechat}` : '', `说明：${brand.contact.note}`].filter(Boolean).join('\n'),
+      status: 'unverified', statusLabel: '公开入口 · 待复核', assetIds: [], sources: [{ label: brand.evidence || '公开品牌资料快照' }], displayOrder: side === 'a' ? 3 : 4 });
     if (!preview) continue;
     const id = `${preview.id}-${side}`;
-    assets.push({ id, name: `${brand.name}渠道预演.svg`, kind: 'image', url: preview[side], downloadUrl: `${preview[side]}?download=1`, mimeType: 'image/svg+xml', size: 0, width: 900, height: 1200 });
+    const url = preview[side], isPng = /\.png$/i.test(url);
+    const dimensions = isPng ? { width: 1122, height: 1402 } : { width: 900, height: 1200 };
+    assets.push({ id, name: `${brand.name}渠道预演.${isPng ? 'png' : 'svg'}`, kind: 'image', url, downloadUrl: isPng ? url : `${url}?download=1`, mimeType: isPng ? 'image/png' : 'image/svg+xml', size: 0, ...dimensions });
     nodes.push({ id, kind: 'image', lane: 'media', title: `${brand.name} · 自有渠道预演`, summary: project.headlines[side].replace('\n', ' '),
-      content: `发布方视觉为主，合作方只增加署名和受众入口。\n${preview.source === 'ai' ? 'AI 场景与品牌排版合成' : '模板排版预演，非本轮实时 AI 出图'}。\n${visual.source === 'unprovided' ? '缺少原 VI，当前为中性占位。' : '保留各自品牌视觉。'}\n待双方确认，未发布。`,
-      status: 'unverified', statusLabel: preview.source === 'template' ? '模板预演 · 待确认' : 'AI 预演 · 待确认', assetIds: [id], primaryAssetId: id, sources: [{ label: '已保存的预演', assetId: id }], displayOrder: side === 'a' ? 3 : 4 });
+      content: `发布方视觉为主，合作方只增加署名和受众入口。\n${preview.source === 'ai' ? 'AI 场景与品牌排版已预生成，打开演示时不重新出图' : '模板排版预演，非本轮实时 AI 出图'}。\n${visual.source === 'unprovided' ? '缺少原 VI，当前为中性占位。' : '保留各自品牌视觉。'}\n待双方确认，未发布。`,
+      status: 'unverified', statusLabel: preview.source === 'template' ? '模板预演 · 待确认' : 'AI 预演 · 已预加载', assetIds: [id], primaryAssetId: id, sources: [{ label: '已保存的预演', assetId: id }], displayOrder: side === 'a' ? 5 : 6 });
   }
   return { id: project.id, title: `${project.brands.a.brand.name} × ${project.brands.b.brand.name}`, summary: project.invitation.draft.concept,
     brandNames: [project.brands.a.brand.name, project.brands.b.brand.name], updatedAt: project.updatedAt, nodeCount: nodes.length, assetCount: assets.length,
@@ -67,8 +74,8 @@ export class RelationsProductionRepository extends ProductionRepository {
     try {
       const saved = await this.store.get(id), project = productionProject(saved);
       project.assets = await Promise.all(project.assets.map(async asset => ({ ...asset,
-        size: (await this.store.asset(id, asset.url.split('/').at(-1)!)).byteLength,
-        height: saved.channel === 'store' ? 1272 : 1200,
+        size: (asset.url.startsWith('/collaboration/cotti-nailong/') ? await readFile(resolve('public', `.${asset.url}`)) : await this.store.asset(id, asset.url.split('/').at(-1)!)).byteLength,
+        height: asset.mimeType === 'image/png' ? asset.height : saved.channel === 'store' ? 1272 : 1200,
       })));
       return project;
     } catch { throw new RuntimeError('合作项目不存在，请返回项目列表。', 404); }
@@ -94,12 +101,17 @@ export function canvasIntegration(initialize: ReturnType<typeof createColliderSe
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw new RuntimeError('已有画板会话暂不可读，已保留原记录，请重试。', 409); }
     if (!sessionId) {
       const brief = canvasBrief(project);
-      const session = await runtime.create({ ...brief, autoProduce: runtime.info().autoProductionConfigured === true });
+      const session = await runtime.create({ ...brief, autoProduce: id === PRELOADED_COTTI_NAILONG_PROJECT_ID ? false : runtime.info().autoProductionConfigured === true });
       sessionId = session.id;
       await mkdir(folder, { recursive: true });
       await writeFile(file, JSON.stringify({ sessionId, projectId: id, revision: project.revision }), { flag: 'wx', mode: 0o600 });
     }
     return { url: `/canvas.html?relation=${encodeURIComponent(id)}&project=${encodeURIComponent(id)}&session=${encodeURIComponent(sessionId)}` };
+  };
+  const openOnce = (id: string) => {
+    let work = opening.get(id);
+    if (!work) { work = open(id); opening.set(id, work); }
+    return work.finally(() => { if (opening.get(id) === work) opening.delete(id); });
   };
   const middleware = async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     const path = req.url?.split('?')[0] ?? '';
@@ -112,9 +124,7 @@ export function canvasIntegration(initialize: ReturnType<typeof createColliderSe
         let body = ''; for await (const chunk of req) { body += chunk; if (body.length > 1024) throw new RuntimeError('请求过长。', 413); }
         const { projectId } = JSON.parse(body);
         if (typeof projectId !== 'string' || !/^project-[a-f0-9-]{36}$/.test(projectId)) throw new RuntimeError('项目编号无效。');
-        let work = opening.get(projectId);
-        if (!work) { work = open(projectId); opening.set(projectId, work); }
-        try { json(200, await work); } finally { if (opening.get(projectId) === work) opening.delete(projectId); }
+        json(200, await openOnce(projectId));
         return;
       }
       // Execute the original HTTP router and runtime, including uploads, dialogue,
@@ -123,5 +133,5 @@ export function canvasIntegration(initialize: ReturnType<typeof createColliderSe
       upstream.emit('request', req, res);
     } catch (error) { json(error instanceof RuntimeError ? error.status : 500, { error: error instanceof RuntimeError ? error.message : '画板暂不可用，项目资料已保留。' }); }
   };
-  return { name: 'collider-original-canvas', configureServer(server) { server.middlewares.use(middleware); server.httpServer?.once('close', () => { if (upstream) void initialize().then(({ runtime }) => runtime.shutdown()); }); }, configurePreviewServer(server) { server.middlewares.use(middleware); } };
+  return { name: 'collider-original-canvas', configureServer(server) { server.middlewares.use(middleware); void openOnce(PRELOADED_COTTI_NAILONG_PROJECT_ID).catch(() => undefined); server.httpServer?.once('close', () => { if (upstream) void initialize().then(({ runtime }) => runtime.shutdown()); }); }, configurePreviewServer(server) { server.middlewares.use(middleware); } };
 }

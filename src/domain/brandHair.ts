@@ -53,9 +53,10 @@ const colorCues:readonly [string,RegExp][]=[
 const normalize=(text:string)=>text.normalize('NFKC').trim().replace(/\s+/gu,' ').toLowerCase();
 const pick=<T,>(items:readonly T[],seed:number):T=>items[seed%items.length];
 
-/** Brand content selects the family; the stable name only chooses variation within that family. */
-export function deriveBrandHair(brand:Pick<Brand,'name'|'category'|'identity'>,props:readonly {id:string;label:string;evidence:string}[]) {
-  const seed=hash(normalize(brand.name));
+/** Brand content selects the family; the stable visual seed only chooses variation within that family. */
+export function deriveBrandHair(brand:Pick<Brand,'name'|'category'|'identity'|'visualSeed'>,props:readonly {id:string;label:string;evidence:string}[]) {
+  const visualSeed=normalize(brand.visualSeed ?? brand.name);
+  const seed=hash(visualSeed);
   const identity=brand.identity.split(/[，,;；。！？\n]/u).filter(clause=>!/不要|避免|不使用|不采用|without|avoid|\bnot\b|\bno\b/i.test(clause)).join(' ');
   const primary=props[0];
   const ranked=themes.map(theme=>({theme,score:Number(Boolean(primary&&theme.props.includes(primary.id)))*10+Number(theme.category.test(brand.category))*6})).sort((a,b)=>b.score-a.score);
@@ -77,7 +78,7 @@ export function deriveBrandHair(brand:Pick<Brand,'name'|'category'|'identity'>,p
   const hex=identity.match(/#([a-f\d]{6}|[a-f\d]{3})\b/i)?.[1];
   const namedColor=colorCues.find(([,pattern])=>pattern.test(identity));
   const selectedColor=hex?color(`brand-${hex.toLowerCase()}`,'品牌指定色',`#${hex.length===3?[...hex].map(c=>c+c).join(''):hex}`.toLowerCase())
-    :HAIR_COLORS.find(item=>item.id===(namedColor?.[0]??(theme?pick(theme.colors,hash(`${normalize(brand.name)}:color`)):'rose')))!;
+    :HAIR_COLORS.find(item=>item.id===(namedColor?.[0]??(theme?pick(theme.colors,hash(`${visualSeed}:color`)):'rose')))!;
   const explicitColor=Boolean(hex||namedColor);
   return {style,color:selectedColor,theme:theme?.id??'neutral',themeLabel:theme?.label??'品牌日常',
     reason:explicitColor?`采用品牌视觉偏好中的${hex?`#${hex}`:selectedColor.label}`:theme?`${theme.label} · ${theme.mood}`:'资料较少，保留原型色系',

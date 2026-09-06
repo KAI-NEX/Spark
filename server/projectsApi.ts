@@ -11,6 +11,7 @@ import { approveMaterial, currentPreview, isPaused, readyToExport, updateBrief, 
 import type { Project, ProjectBrand, Side, VisualIdentity } from '../src/collaboration/model';
 import type { InvitationAction, InvitationDraft } from '../src/domain/invitation';
 import { initialBrief } from '../src/collaboration/fixtures';
+import { preloadedCottiNailongProject, PRELOADED_COTTI_NAILONG_PROJECT_ID } from '../src/collaboration/preloadedProject';
 import { posterSvg } from './projectPoster';
 
 const ID = /^project-[a-f0-9-]{36}$/;
@@ -58,12 +59,22 @@ export class ProjectStore {
     const names = (await readdir(this.directory)).filter(name => ID.test(name));
     const results = await Promise.allSettled(names.map(id => this.get(id)));
     // A damaged individual project must not hide every other project.
-    return results.flatMap(result => result.status === 'fulfilled' ? [result.value] : []).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    const projects = results.flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
+    if (!names.includes(PRELOADED_COTTI_NAILONG_PROJECT_ID)) projects.push(preloadedCottiNailongProject());
+    return projects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
   async get(id: string): Promise<Project> {
-    const files = (await readdir(this.folder(id))).filter(name => /^revision-\d+\.json$/.test(name)).sort((a, b) => Number(a.match(/\d+/)![0]) - Number(b.match(/\d+/)![0]));
-    if (!files.length) throw new Error('项目不存在。');
-    return JSON.parse(await readFile(resolve(this.folder(id), files.at(-1)!), 'utf8'));
+    try {
+      const files = (await readdir(this.folder(id))).filter(name => /^revision-\d+\.json$/.test(name)).sort((a, b) => Number(a.match(/\d+/)![0]) - Number(b.match(/\d+/)![0]));
+      if (!files.length) {
+        if (id === PRELOADED_COTTI_NAILONG_PROJECT_ID) return preloadedCottiNailongProject();
+        throw new Error('项目不存在。');
+      }
+      return JSON.parse(await readFile(resolve(this.folder(id), files.at(-1)!), 'utf8'));
+    } catch (error) {
+      if (id === PRELOADED_COTTI_NAILONG_PROJECT_ID && (error as NodeJS.ErrnoException).code === 'ENOENT') return preloadedCottiNailongProject();
+      throw error;
+    }
   }
   private async save(project: Project) {
     await mkdir(this.folder(project.id), { recursive: true });
@@ -76,10 +87,10 @@ export class ProjectStore {
     const a = validateBrand(brands.a), b = validateBrand(brands.b);
     if (a.brand.id === b.brand.id || a.brand.name === b.brand.name) throw new Error('一对一合作需要两个不同品牌。');
     const timestamp = new Date().toISOString();
-    const featured = a.brand.id === 'zaoba-coffee' && b.brand.id === 'liubai-books';
+    const featured = a.brand.id === 'cotti-coffee' && b.brand.id === 'nailong';
     let project: Project = { id: `project-${randomUUID()}`, sequence: 1, revision: 1, createdAt: timestamp, updatedAt: timestamp, brands: { a, b },
       invitation: { status: 'draft', version: 1, feedback: '', draft: data.draft ? validateDraft(data.draft) : initialBrief(a.brand, b.brand) },
-      headlines: { a: featured ? '一杯咖啡，\n一页日常。' : '日常里，\n遇见新朋友。', b: featured ? '读到这里，\n喝杯咖啡。' : '从喜欢，\n到新的喜欢。' },
+      headlines: { a: featured ? '今天也要，\n奶一口好咖啡。' : '日常里，\n遇见新朋友。', b: featured ? '治愈一下，\n再喝一口。' : '从喜欢，\n到新的喜欢。' },
       channel: 'social', previews: [], approvals: { a: false, b: false }, notes: [] };
     project = await this.generate(project);
     return this.save(project);

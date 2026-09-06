@@ -3,10 +3,10 @@ import {generateMockBrands} from '../data/mockBrands';
 import {deriveBrandAppearance} from './brandAppearance';
 import {displayBrand} from './chinese';
 
-const base=generateMockBrands()[0];
+const base=generateMockBrands().find(brand=>brand.id==='memory-block')!;
 describe('brand information becomes visible equipment',()=>{
   it('gives all 40 fictional companies a distinct, sourced identity',()=>{
-    const brands=generateMockBrands();
+    const brands=generateMockBrands().filter(brand=>brand.fictional);
     expect(brands).toHaveLength(40);
     expect(brands.every(brand=>brand.fictional)).toBe(true);
     const looks=brands.map(deriveBrandAppearance);

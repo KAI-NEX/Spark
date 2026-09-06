@@ -12,13 +12,14 @@ const CAPABILITIES: Lexicon = {
   experience: ['digital interaction', 'sound design', '数字交互', '体验设计', '声音设计'], space: ['retail space', 'spatial design', '零售空间', '空间设计'],
   content: ['content production', 'publishing', '内容制作', '出版'], community: ['community building', 'event production', '社群运营', '活动策划'],
   food: ['food development', 'tea sourcing', 'coffee roasting', '食品研发', '茶叶', '咖啡烘焙'], packaging: ['packaging', '包装'], textile: ['textile development', '纺织', '面料研发'],
+  ip: ['character ip', 'ip licensing', 'brand collaboration', '角色 ip', '角色IP', 'ip 授权', 'IP授权', '商品授权', '品牌联名', '原创动漫'],
   finance: ['tax reporting', 'audit preparation', 'payroll'], compliance: ['compliance training', 'bookkeeping'],
 };
 const PROJECTS: Lexicon = {
   physical: ['physical products', 'object collections', 'wearable collections', '实体产品', '用品', '收纳', '产品'],
   culture: ['cultural exhibitions', 'cultural projects', '文化展览', '文化项目'], digital: ['digital experiences', '数字体验'],
-  retail: ['pop-up retail', '快闪零售', '零售'], content: ['editorial content', 'campaigns', '内容', '传播活动'],
-  food: ['food experiences', 'food rituals', '食品体验', '饮食仪式'], industry: ['industrial procurement', 'freight', '工业采购', '货运'],
+  retail: ['pop-up retail', '快闪零售', '零售', '门店'], content: ['editorial content', 'campaigns', '内容', '传播活动', '社交媒体', '线上宣发'],
+  food: ['food experiences', 'food rituals', '食品体验', '饮食仪式', '主题饮品'], industry: ['industrial procurement', 'freight', '工业采购', '货运'],
   finance: ['tax compliance', 'financial reporting'], outdoors: ['outdoor adventures', 'wilderness'],
 };
 const AUDIENCES: Lexicon = {
@@ -29,8 +30,9 @@ const AUDIENCES: Lexicon = {
   food: ['food lovers', '食品爱好者'], eco: ['environmentally conscious', 'nature lovers', '环保消费者', '自然爱好者'],
   industry: ['industrial buyers', 'freight operators', 'procurement'],
   finance: ['accountants', 'finance departments'], outdoors: ['hikers', 'outdoor athletes'],
+  youth: ['young professionals', 'white-collar', 'college students', '年轻白领', '白领', '大学生', '年轻消费者', '潮玩爱好者', '动漫爱好者'],
 };
-const ADJACENT = new Set(['design:maker', 'collector:design', 'culture:design', 'design:tech', 'collector:culture', 'culture:tech', 'culture:local', 'food:local', 'design:fashion', 'design:home', 'maker:retail', 'eco:maker', 'eco:fashion', 'eco:outdoors', 'home:retail', 'design:retail']);
+const ADJACENT = new Set(['design:maker', 'collector:design', 'culture:design', 'design:tech', 'collector:culture', 'culture:tech', 'culture:local', 'food:local', 'design:fashion', 'design:home', 'maker:retail', 'eco:maker', 'eco:fashion', 'eco:outdoors', 'home:retail', 'design:retail', 'culture:youth', 'food:youth', 'local:youth']);
 const PROJECT_BRIDGES: Record<string, number> = {
   'culture:physical': 0.58, 'digital:physical': 0.7, 'physical:retail': 0.67,
   'content:physical': 0.48, 'culture:digital': 0.85, 'culture:retail': 0.8,
@@ -43,7 +45,7 @@ const LABELS: Record<string, string> = {
   distribution: '渠道分销', visual: '视觉设计', culture: '文化叙事',
   craft: '传统工艺', technology: '技术', experience: '交互体验',
   space: '空间', content: '内容与出版', community: '社群与活动',
-  finance: '财税', compliance: '合规', food: '食品专业能力', packaging: '包装', textile: '纺织研发',
+  finance: '财税', compliance: '合规', food: '食品专业能力', packaging: '包装', textile: '纺织研发', ip: '角色 IP 与商业授权',
 };
 const OUTCOMES: Record<string, string> = {
   physical: '实验性的限量器物系列。',
@@ -61,6 +63,11 @@ const extract = (text: string, lexicon: Lexicon) => Object.keys(lexicon).filter(
 const intersection = (a: string[], b: string[]) => a.filter(item => b.includes(item));
 const overlap = (a: string[], b: string[]) => intersection(a, b).length / Math.max(1, new Set([...a, ...b]).size);
 const clamp = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
+const TRAITS: Lexicon = {
+  experimental: ['experimental', '实验性'], playful: ['playful', '趣味', '可爱', '活泼'], curious: ['curious', '好奇'],
+  traditional: ['traditional', '传统'], practical: ['practical', '务实'], sustainable: ['sustainable', '可持续'], independent: ['independent', '独立'],
+  precise: ['precise', '精确'], warm: ['warm', '温暖'], open: ['open', '开放'], thoughtful: ['thoughtful', '深思熟虑'],
+};
 
 /** Pure directional explanation with symmetric scoring. Only reads Brand snapshots. */
 export function calculateMockRelation(focus: Brand, target: Brand): RelationResult {
@@ -81,8 +88,7 @@ export function calculateMockRelation(focus: Brand, target: Brand): RelationResu
   const adjacent = aAudience.some(x => bAudience.some(y => ADJACENT.has(pair(x, y))));
   const audienceExpansion = clamp(audienceSimilarity > 0.8 ? 40 : adjacent ? 84 + jitter : audienceSimilarity > 0 ? 67 : 22);
   const tension = (a.includes('craft') && b.includes('technology')) || (b.includes('craft') && a.includes('technology'));
-  const traits = ['experimental', 'playful', 'curious', 'traditional', 'practical', 'sustainable', 'independent', 'precise', 'warm', 'open', 'thoughtful'];
-  const sharedTraits = traits.filter(trait => focus.identity.toLowerCase().includes(trait) && target.identity.toLowerCase().includes(trait));
+  const sharedTraits = Object.keys(TRAITS).filter(trait => [focus, target].every(brand => TRAITS[trait].some(term => brand.identity.toLowerCase().includes(term))));
   const chemistry = clamp(tension ? 94 + jitter : sharedTraits.length ? 65 + Math.min(3, sharedTraits.length) * 8 + jitter : 45 + jitter);
   const conflict = [focus, target].some((brand, i, both) => /no prototypes|no limited editions|above 100000/i.test(brand.constraints) && /experimental|limited|prototype/i.test(both[1 - i].intent));
   const feasibility = conflict ? 20 : 91;
@@ -108,10 +114,11 @@ export function calculateMockRelation(focus: Brand, target: Brand): RelationResu
     : tension ? `传统工艺与技术形成可探索的差异。 ${evidence} ${projectAffinity >= 0.7 ? '共同的项目方向让这种差异具有合作价值。' : '具体的共同项目仍需明确。'}`
     : `${evidence || '现有资料未显示直接的能力与需求互补。'} ${projectAffinity >= 0.7 ? '双方项目目标有机会支撑共同产物。' : projectAffinity > 0 ? '双方目标相邻，可以先明确一个小型共同任务。' : '双方当前项目目标的方向不同。'}`;
   const goal = commonGoals[0] ?? [...aGoals, ...bGoals].sort()[0];
+  const ipFoodCollaboration = [...a, ...b].includes('ip') && [...a, ...b].includes('food') && [...aGoals, ...bGoals].includes('retail');
   return {
     sourceBrandId: focus.id, targetBrandId: target.id,
     collaborationFit, relationType, ...dimensions, reason: !focus.intent.trim() || !target.intent.trim() ? `${evidence || '目前可用于判断的资料较少。'} 联名目标尚待补充，当前只显示已有能力线索。` : reason,
-    possibleOutcome: collaborationFit < 50 ? '尚未形成明确的共同项目，投入前需先确认共同目标。' : OUTCOMES[goal] ?? '通过小型共同原型验证合作机会。',
+    possibleOutcome: collaborationFit < 50 ? '尚未形成明确的共同项目，投入前需先确认共同目标。' : ipFoodCollaboration ? '一套角色主题饮品、联名杯套与门店打卡内容的限时体验。' : OUTCOMES[goal] ?? '通过小型共同原型验证合作机会。',
     caveat: conflict ? '工业起订量与限量试点存在冲突。'
       : projectAffinity < 0.4 ? '仅凭能力互补无法解决当前目标差异。'
       : !a.includes('distribution') && !b.includes('distribution') && goal === 'physical' ? '渠道分销能力仍待补足。'

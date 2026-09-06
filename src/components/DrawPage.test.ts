@@ -20,4 +20,8 @@ describe('Independent draw mode', () => {
     expect(shuffleBrands(brands.slice(0, 1), brands[0].id)).toEqual([]);
     expect(shuffleBrands(brands, brands[0].id)).toEqual([brands[1]]);
   });
+  it('keeps a featured match in the hand while randomizing the other two cards', () => {
+    const brands = mockDataSource.loadBrands(1);
+    for (let round = 0; round < 20; round++) expect(shuffleBrands(brands, 'cotti-coffee', 'nailong').some(brand => brand.id === 'nailong')).toBe(true);
+  });
 });
