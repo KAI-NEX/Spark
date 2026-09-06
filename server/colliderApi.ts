@@ -1,4 +1,5 @@
-import { CodexTextProvider } from './codexProvider';
+import { CodexTextProvider, loadCodexOptions } from './codexProvider';
+import { compactProposalInput, generateQuickProposal, QUICK_PROPOSAL_METHOD } from './quickProposal';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Buffer } from 'node:buffer';
 import { resolve } from 'node:path';
@@ -44,23 +45,26 @@ async function readJson(req: IncomingMessage, limit = 400000) {
   for await (const chunk of req) { size += chunk.length; if (size > limit) throw new RuntimeError('资料过长，请精简后重试。', 413); chunks.push(Buffer.from(chunk)); }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new RuntimeError('请求格式不正确。'); }
 }
-export function colliderApi(env: NodeJS.ProcessEnv): Plugin {
+export function createColliderService(env: NodeJS.ProcessEnv) {
   let service: Promise<{ runtime: ColliderRuntime; provider?: TextProvider; imageProvider?: OpenAIImageProvider }> | undefined;
-  let active = 0;
-  const initialize = () => service ??= (async () => {
+  return () => service ??= (async () => {
     const cwd = resolve('integrations/collider/brand-collider-skills-design');
     let provider: TextProvider | undefined;
     let imageProvider: OpenAIImageProvider | undefined;
     if (env.BRAND_AI_PROVIDER === 'codex') {
-      const local = new CodexTextProvider(env.CODEX_BIN || 'codex');
+      const local = new CodexTextProvider(env.CODEX_BIN || 'codex', 180000, loadCodexOptions(env));
       if (await local.available()) provider = local;
     } else if (env.OPENAI_API_KEY || env.OPENAI_PROVIDER === 'cpa') {
       try { provider = new OpenAITextProvider(loadImageConfig({ ...env, OPENAI_BASE_URL: env.OPENAI_BASE_URL || 'https://api.openai.com/v1' }, cwd), loadTextOptions(env)); } catch { /* Configuration details and secrets stay server-side. */ }
     }
-    if (provider && env.BRAND_AI_PROVIDER !== 'codex') { try { imageProvider = new OpenAIImageProvider(loadImageConfig({...env,OPENAI_BASE_URL:env.OPENAI_BASE_URL || 'https://api.openai.com/v1',IMAGE_TIMEOUT_MS:'180000'},cwd)); } catch { /* Leave image generation unavailable. */ } }
-    const runtime = new ColliderRuntime({ cwd, provider, outputDir: resolve('outputs/collider-sessions') });
+    const imageOutputDir = resolve('outputs/collider-images');
+    try { imageProvider = new OpenAIImageProvider(loadImageConfig({...env,OPENAI_BASE_URL:env.OPENAI_BASE_URL || 'https://api.openai.com/v1',IMAGE_TIMEOUT_MS:'180000',IMAGE_OUTPUT_DIR:imageOutputDir},cwd)); } catch { /* Leave image generation unavailable. */ }
+    const runtime = new ColliderRuntime({ cwd, provider, imageProvider, imageOutputDir, outputDir: resolve('outputs/collider-sessions') });
     await runtime.init(); return { runtime, provider, imageProvider };
   })();
+}
+export function colliderApi(env: NodeJS.ProcessEnv, initialize = createColliderService(env)): Plugin {
+  let active = 0;
   const middleware = async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     const path = req.url?.split('?')[0] ?? '';
     if (!path.startsWith('/api/collider/')) { next(); return; }
@@ -90,9 +94,9 @@ export function colliderApi(env: NodeJS.ProcessEnv): Plugin {
         const body = await readJson(req);
         if (path === '/api/collider/wearable') { if(!imageProvider) throw new RuntimeError('穿搭生成尚未连接。',503); send(200,await generateBrandWearable(imageProvider,body)); return; }
         if (['/api/collider/analyze-brand','/api/collider/lab/analyze-brand'].includes(path)) { send(200, await analyzeBrandDocuments(provider, body)); return; }
+        if (path === '/api/collider/quick-proposal') { send(200, await generateQuickProposal(provider, body)); return; }
         if (['/api/collider/field','/api/collider/lab/field'].includes(path)) {
-          const skills = runtime.info().skills.filter(skill => ['brand-profile', 'collab-ideation', 'quality-review'].includes(skill.id));
-          send(200, await generateProposalField(provider, body, skills.map(skill => skill.content).join('\n\n'))); return;
+          send(200, await generateProposalField(provider, { ...compactProposalInput(body), field: body.field }, QUICK_PROPOSAL_METHOD)); return;
         }
         if (path === '/api/collider/sessions') { send(201, await runtime.create({ ...body, mode: 'live' })); return; }
         if (match) {
@@ -105,5 +109,5 @@ export function colliderApi(env: NodeJS.ProcessEnv): Plugin {
       } finally { active--; }
     } catch (error) { send(error instanceof RuntimeError ? error.status : 500, { error: error instanceof RuntimeError ? error.message : '提案服务暂时不可用，已填写内容仍保留。' }); }
   };
-  return { name: 'collider-proposal-integration', configureServer(server) { server.middlewares.use(middleware); server.httpServer?.once('close', () => { void service?.then(({ runtime }) => runtime.shutdown()); }); }, configurePreviewServer(server) { server.middlewares.use(middleware); } };
+  return { name: 'collider-proposal-integration', configureServer(server) { server.middlewares.use(middleware); }, configurePreviewServer(server) { server.middlewares.use(middleware); } };
 }

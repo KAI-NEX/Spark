@@ -11,11 +11,17 @@ const groups = {
   bag: ['fold-supply', 'common-objects', 'open-room', 'neighbourhood', 'lab-louis-vuitton', 'lab-adidas'],
 } as const;
 const concepts = new Map<string, string>(Object.entries(groups).flatMap(([look, ids]) => ids.map(id => [id, look] as const)));
+const hairstyleLooks: Record<string, string> = {
+  coffee: '/avatars/draw-v4-hair/coffee-bun.png',
+  outdoor: '/avatars/draw-v4-hair/outdoor-ponytail.png',
+  creative: '/avatars/draw-v4-hair/creative-waves.png',
+  jacket: '/avatars/draw-v4-hair/jacket-pixie.png',
+};
 export function drawWearable(brand: Brand): ReturnType<typeof brandWearable> {
   const actual = brandWearable(brand);
   if (actual.source === 'generated') return actual;
   const concept = concepts.get(brand.id);
   if (!concept) return actual;
-  const url = ['coffee', 'outdoor', 'creative'].includes(concept) ? `/avatars/draw-v3/${concept}.png` : `/avatars/wearables-v2/${concept}-final.png`;
+  const url = hairstyleLooks[concept] ?? `/avatars/wearables-v2/${concept}-final.png`;
   return { url, label: '品牌角色 · 概念穿搭', source: 'example' };
 }

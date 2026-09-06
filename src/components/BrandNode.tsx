@@ -13,7 +13,7 @@ export function renderNodeLOD(node: SceneNode, lod: LOD) {
   const primary = detailed ? describeBrandCharacter(node.brand).primary : undefined;
   return <>
     {node.isFocus && detailed ? <span className="focus-halo" aria-hidden="true" /> : null}
-    <span className="node-art" key={lod}><BrandCharacter brand={node.brand} lod={lod} look={drawWearable(node.brand)} /></span>
+    <span className="node-art"><BrandCharacter brand={node.brand} lod={lod} look={drawWearable(node.brand)} /></span>
     {named ? <span className="brand-name">{node.brand.name}</span> : null}
     {detailed ? <span className="node-capability">{chineseLabel(primary?.label ?? '能力待补充')}</span> : null}
     {node.isFocus && detailed ? <span className="brand-meta focus-label">当前聚焦</span> : lod === 'full' ? <span className="brand-meta">{node.exploratory ? '待探索' : <><strong>{node.fit}</strong><span> /100</span></>}</span> : null}

@@ -3,7 +3,7 @@ import { generateMockBrands } from '../data/mockBrands';
 import { mockDataSource } from '../data/source';
 import type { LOD, SceneNode } from '../domain/types';
 import { calculateGravityPositions } from './gravity';
-import { resolveLODOverlap, calculateViewportLOD, constrainViewport, getNodeScreenPosition, getViewportBounds, updateVisibleNodes } from './viewport';
+import { resolveLODByDistance, calculateViewportLOD, constrainViewport, getNodeScreenPosition, getViewportBounds, updateVisibleNodes } from './viewport';
 
 const view = { x: 0, y: 0, zoom: 0.8 };
 const size = { width: 1171, height: 938 };
@@ -36,9 +36,9 @@ describe('Viewport-driven LOD', () => {
     expect(calculateViewportLOD(getNodeScreenPosition(position, zoomed, size), 22, zoomed, size)).toBe('full');
     expect(position).toEqual({ x: 1400, y: 200 });
   });
-  it('does not render detailed labels underneath the existing canvas controls', () => {
+  it('keeps distance-based artwork consistent even when controls overlap it', () => {
     const occludedSize = { ...size, occlusions: [{ left: center.x - 30, right: center.x + 30, top: center.y - 30, bottom: center.y + 30 }] };
-    expect(calculateViewportLOD(center, 95, view, occludedSize)).toBe('marker');
+    expect(calculateViewportLOD(center, 95, view, occludedSize)).toBe('full');
     expect(calculateViewportLOD(center, 95, view, size)).toBe('full');
   });
   it('zooming out limits detail even when all brands fit on screen', () => {
@@ -60,7 +60,8 @@ describe('Viewport-driven LOD', () => {
     const before = JSON.stringify(nodes);
     const initial = updateVisibleNodes(nodes, view, size);
     const primary = [...initial.values()].filter(lod => lod === 'full' || lod === 'portrait');
-    expect(primary.length).toBeGreaterThanOrEqual(8);
+    expect(primary.length).toBeGreaterThan(1);
+    expect([...initial.values()]).toContain('portrait');
     expect(primary.length).toBeLessThan(nodes.length);
     expect([...initial.values()].filter(lod => lod === 'full').length).toBeLessThanOrEqual(15);
     expect([...initial.values()]).toContain('dormant');
@@ -86,35 +87,70 @@ describe('Viewport-driven LOD', () => {
     expect(updateVisibleNodes(nodes, {...view, zoom: 0.66}, size).get(brand.id)).toBe('portrait');
     expect(nodes[0].fit).toBe(100);
   });
-  it('allows broad exploration, while limiting travel beyond the finite virtual world', () => {
+  it('allows unbounded exploration beyond the original virtual world', () => {
     expect(constrainViewport({ ...view, x: 800, y: -600 }, size)).toEqual({ ...view, x: 800, y: -600 });
     const constrained = constrainViewport({ ...view, x: 99999, y: -99999 }, size);
-    expect(constrained.x).toBeGreaterThan(size.width / 2);
-    expect(constrained.x).toBeLessThan(2000);
-    expect(constrained.y).toBeGreaterThan(-2000);
+    expect(constrained).toEqual({ ...view, x: 99999, y: -99999 });
   });
 });
 
 describe('Readable LOD distances', () => {
-  it('reveals intermediate portraits across the field and protects edge labels', () => {
+  it('reveals intermediate portraits across the field and clips at viewport edges', () => {
     expect(calculateViewportLOD(center,80,view,size)).toBe('full');
     expect(calculateViewportLOD({x:size.width*.85,y:center.y},80,view,size)).toBe('portrait');
     expect(calculateViewportLOD({x:45,y:center.y},80,view,size)).toBe('marker');
-    expect(calculateViewportLOD({x:center.x,y:size.height-40},80,{...view,zoom:1.2},size)).toBe('marker');
+    expect(calculateViewportLOD({x:center.x,y:size.height-40},80,{...view,zoom:1.2},size)).toBe('full');
   });
 });
 
 
-describe('LOD overlap resolution', () => {
-  it('keeps the focal character readable and reduces crowded neighbors without relocating them', () => {
-    const brands=generateMockBrands().slice(0,3);
-    const nodes=brands.map((brand,i)=>({brand,isFocus:i===0,fit:100-i*20,position:{brandId:brand.id,x:i*70,y:0,radius:i*70}}));
-    const before=JSON.stringify(nodes);
-    const levels=new Map(nodes.map(node=>[node.brand.id,'full' as LOD]));
-    const result=resolveLODOverlap(nodes,levels,view,size);
-    expect(result.get(brands[0].id)).toBe('full');
-    expect(result.get(brands[1].id)).toBe('marker');
+describe('Radial LOD consistency', () => {
+  it('gives every angle the same stage at equal camera distance on a rectangular canvas', () => {
+    for (const [radius, expected] of [[100, 'full'], [290, 'portrait'], [410, 'portrait'], [480, 'marker']] as const) {
+      for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 12) {
+        const screen = { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius };
+        expect(calculateViewportLOD(screen, 25, view, size)).toBe(expected);
+      }
+    }
+  });
+  it('keeps crowded peers at the same distance in the same stage without selection or ID bias', () => {
+    const nodes = generateMockBrands().slice(0, 12).map((brand, i) => {
+      const angle = i * Math.PI / 6;
+      return { brand, isFocus: false, fit: i * 8, position: { brandId: brand.id, x: Math.cos(angle) * 360, y: Math.sin(angle) * 360, radius: 360 } };
+    });
+    const before = JSON.stringify(nodes);
+    expect(new Set(updateVisibleNodes(nodes, view, size).values())).toEqual(new Set(['portrait']));
     expect(JSON.stringify(nodes)).toBe(before);
-    expect([...levels.values()]).toEqual(['full','full','full']);
+  });
+  it('reveals marker, head, then body when approaching a node without changing zoom', () => {
+    const position = { x: 650, y: 0 };
+    const levels = [0, -200, -520].map(x => {
+      const camera = { ...view, x };
+      return calculateViewportLOD(getNodeScreenPosition(position, camera, size), 25, camera, size);
+    });
+    expect(levels).toEqual(['marker', 'portrait', 'full']);
+  });
+});
+
+
+describe('Crowded radial bands', () => {
+  it('shrinks a whole band at equal distances, independently of node order', () => {
+    const nodes = generateMockBrands().slice(0, 5).map((brand, i) => {
+      const angle = i * .1;
+      return { brand, fit: 80, isFocus: i === 0, position: { brandId: brand.id, x: i ? Math.cos(angle) * 180 : 0, y: i ? Math.sin(angle) * 180 : 0, radius: i ? 180 : 0 } };
+    });
+    const levels = updateVisibleNodes(nodes, view, size);
+    const before = JSON.stringify(nodes);
+    const resolved = resolveLODByDistance(nodes, levels, view, size);
+    expect(new Set(nodes.slice(1).map(node => resolved.get(node.brand.id))).size).toBe(1);
+    expect(resolved.get(nodes[0].brand.id)).toBe('full');
+    expect(resolveLODByDistance([...nodes].reverse(), levels, view, size)).toEqual(resolved);
+    expect(JSON.stringify(nodes)).toBe(before);
+    expect(new Set(levels.values())).toEqual(new Set(['full']));
+  });
+  it('retains all three stages with readable spacing around a dense camera focus', () => {
+    const nodes = generateMockBrands().slice(0, 4).map((brand, i) => ({ brand, fit: 100-i*10, isFocus: i===0, position: {brandId: brand.id, x: 0, y: [0, 220, 400, 700][i], radius: [0, 220, 400, 700][i]} }));
+    const resolved=resolveLODByDistance(nodes,updateVisibleNodes(nodes,view,size),view,size);
+    expect(nodes.map(node=>resolved.get(node.brand.id))).toEqual(['full','portrait','portrait','marker']);
   });
 });

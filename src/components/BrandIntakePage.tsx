@@ -1,10 +1,11 @@
+import { BrandVisualKey } from './BrandVisualKey';
 import { useEffect, useRef, useState } from 'react';
 import type { Brand } from '../domain/types';
 import { INTAKE_FIELDS, emptyIntake, intakeFromBrand } from '../domain/brandIntake';
 import { brandFromProfile, localProfile, validateDocuments } from '../domain/brandProfile';
 import type { BrandDocument, ProfileAnalysis } from '../domain/brandProfile';
 import { BrandCharacter } from './BrandCharacter';
-import { BASE_AVATAR, brandWearable } from '../domain/wearables';
+import { PrototypeCharacter } from './PrototypeCharacter';
 import { Icon } from './Icon';
 import { LoadingIndicator } from './LoadingIndicator';
 
@@ -62,17 +63,17 @@ export function BrandIntakePage({ onBack, onEnter, initialBrand, localOnly = fal
       if (!alive.current || controller.signal.aborted) return;
       setAnalysis(result); setGeneratedFiles(materialFingerprint(inputDocuments));
       if(!localOnly && available.imageConfigured && result.fields.name && result.fields.offers) {
-        setBusy('dressing'); setStatus('正在把品牌产品穿到角色上…');
+        setBusy('dressing'); setStatus('正在生成角色发型与品牌穿搭…');
         try {
           const wearable = await post<NonNullable<ProfileAnalysis['profile']['wearable']>>('wearable',result,controller.signal);
           if(alive.current && !controller.signal.aborted) {setAnalysis({...result,profile:{...result.profile,wearable}});setStatus('品牌角色已生成，可以继续发现伙伴。');}
         } catch { if(alive.current && !controller.signal.aborted) {setStatus('品牌理解已保留，专属穿搭暂未生成。');setErrors(current=>[...current,'穿搭生成未完成，可先进入探索，更新资料后再生成。']);} }
-      } else setStatus(result.profile.source === 'ai' ? '品牌理解已完成，穿搭生成尚未连接。' : '已完成基础识别，当前穿搭为产品方向示意；AI 尚未连接。');
+      } else setStatus(result.profile.source === 'ai' ? '品牌理解已完成，角色配饰已根据资料更新。' : '已完成基础识别，角色配饰为品牌自述的视觉示意。');
     } catch (error) { if (!controller.signal.aborted && alive.current) { setErrors([...failures,(error as Error).message]); setStatus('解析未完成，已上传文件仍保留。'); } }
     finally { if (alive.current) setBusy(null); }
   };
   const preview = analysis ? brandFromProfile({ ...analysis, fields: { ...analysis.fields, name: analysis.fields.name || '你的品牌' } }, initialBrand) : null;
-  const look = preview ? brandWearable(preview) : null;
+
   const gaps = analysis?.profile.gaps ?? [{ field: 'offers', material: '品牌介绍、产品目录或近期案例', reason: '识别品牌名称、已有产品和核心能力。' }, {field:'identity',material:'产品实物图、材质与视觉规范',reason:'还原产品颜色、质感和穿着方式；图片可与文字说明一起导入。'}, {field:'audience',material:'用户场景、合作案例与本期目标',reason:'帮助判断和什么伙伴合作，以及产品为谁解决问题。'}];
   const update = (key: keyof typeof emptyIntake, value: string) => setAnalysis(current => current ? { ...current, fields: { ...current.fields, [key]: value }, profile: { ...current.profile, evidence: current.profile.evidence.filter(ref => ref.field !== key), accessoryEvidence: undefined, accessoryReview: undefined, wearable: undefined } } : current);
   const enter = () => { if (!analysis) return; try { const value = onEnter(brandFromProfile(analysis, initialBrand)); if (value) setErrors([value]); } catch (error) { setErrors([(error as Error).message]); } };
@@ -97,8 +98,8 @@ export function BrandIntakePage({ onBack, onEnter, initialBrand, localOnly = fal
       {analysis ? <details className="material-understanding compact-understanding"><summary>材料中识别到的内容 <span>{INTAKE_FIELDS.filter(field=>analysis.fields[field.key]).length} 个栏目 · 点击核对</span></summary>
         <div className="editable-material-fields">{INTAKE_FIELDS.map(field=><details key={field.key}><summary>{field.label}<span>{analysis.fields[field.key] ? '已识别 · 编辑' : '待补充'}</span></summary><label>{field.label}<textarea disabled={Boolean(busy)} rows={field.key==='name'?1:3} maxLength={field.max} value={analysis.fields[field.key]} placeholder={field.placeholder} onChange={event=>update(field.key,event.target.value)}/></label></details>)}</div>
       </details> : null}
-    </section><aside className="material-portrait" aria-busy={Boolean(busy)}><div className="profile-avatar">{preview ? <BrandCharacter brand={preview} labelled/> : <img className="character base-character" src={BASE_AVATAR} alt="基础角色"/>}</div>{busy ? <p className="portrait-loading" role="status"><LoadingIndicator>{busyLabel}</LoadingIndicator></p> : null}<h2>{preview?.name || '一个角色，穿上你的品牌。'}</h2>
-      {look ? <div className="intake-equipment"><strong>{look.label}</strong></div> : null}
+    </section><aside className="material-portrait" aria-busy={Boolean(busy)}><div className="profile-avatar">{preview ? <BrandCharacter brand={preview} labelled/> : <PrototypeCharacter labelled/>}</div>{busy ? <p className="portrait-loading" role="status"><LoadingIndicator>{busyLabel}</LoadingIndicator></p> : null}<h2>{preview?.name || '一个角色，穿上你的品牌。'}</h2>
+      {preview ? <BrandVisualKey brand={preview}/> : null}
       <section className="next-material"><h3>补充这些，让角色与连接更具体</h3>{gaps.map((gap,index)=><div key={`${gap.field}-${index}`}><Icon name="document"/><div><strong>{gap.material}</strong><p>{gap.reason}</p></div></div>)}</section>
     </aside></div>
     <footer className="upload-footer intake-return">{analysis ? <><button className="flow-primary" disabled={!analysis.fields.name.trim() || Boolean(busy) || materialFingerprint(documents)!==generatedFiles} onClick={enter}>进入引力匹配</button>{!analysis.fields.name.trim() ? <small>展开识别内容，补充品牌名称即可继续。</small> : null}</> : <p>资料可以慢慢补充，先从一次相遇开始。</p>}</footer>

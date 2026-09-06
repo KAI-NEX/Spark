@@ -46,6 +46,11 @@ const NON_CURRENT_CLAIM = /\b(?:no|not|never|without|lack|lacks|need|needs|seeki
 const THIRD_PARTY_CLAIM = /(?:客户|合作方|合作伙伴|供应商|第三方|竞品|其他品牌)(?:提供|拥有|具备|负责|可以|可|的|能够|能|承接)|\b(?:(?:our|their|the|a)\s+)?(?:customers?|clients?|partners?|suppliers?|vendors?|third[- ]part(?:y|ies)|competitors?)(?:['’]s?\b|\s+(?:have|has|provide|provides|offer|offers|own|owns|handle|handles|deliver|delivers|perform|performs|can|speciali[sz]e|speciali[sz]es)\b)|\b(?:outsourc\w*|rel(?:y|ies|ied)\s+on|provided\s+by)\b[^.;。；]*\b(?:partners?|suppliers?|vendors?|third[- ]part(?:y|ies))\b/iu;
 const isCurrentOwnClaim = (clause: string) => !NON_CURRENT_CLAIM.test(clause) && !THIRD_PARTY_CLAIM.test(clause);
 
+/** Shared conservative boundary for capability and visual-product interpretation. */
+export function currentOwnClauses(text: string): string[] {
+  return text.split(/[.;。；!?\n]|\b(?:but|however)\b|但是|但(?=我们|我司|本品牌)/iu).map(value => value.trim()).filter(value => value && isCurrentOwnClaim(value));
+}
+
 /** Small explicit-phrase adapter for the demo, not a general natural-language inference model. */
 export function extractCapabilities(text: string): Capability[] {
   const clauses = text.split(/[.;。；!?\n]|\b(?:but|however)\b|但是|但(?=我们|我司|本品牌)|[，,](?=\s*(?:我们|我司|本品牌|we\b|our company\b))/iu)

@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Brand } from '../domain/types';
 import { WearableCharacter } from './WearableCharacter';
 import { drawWearable } from '../domain/drawWardrobe';
+import { deriveBrandAppearance } from '../domain/brandAppearance';
 import { Icon } from './Icon';
 
 export function CharacterEntry({ brands, example, onCreate }: { brands: readonly Brand[]; example: Brand; onCreate: () => void }) {
-  const possibilities = useMemo(() => [...new Map(brands.map(brand => [drawWearable(brand).url, brand])).values()], [brands]);
+  const possibilities = useMemo(() => [...new Map(brands.map(brand => [deriveBrandAppearance(brand).props[0]?.id ?? brand.id, brand])).values()], [brands]);
   const [index, setIndex] = useState(0);
   useEffect(() => {
     if (possibilities.length < 2) return;
@@ -21,9 +22,9 @@ export function CharacterEntry({ brands, example, onCreate }: { brands: readonly
       </div>
     </section>
     <section className="entry-stage mystery-stage" aria-label="正在出现的品牌角色">
-      <div className="entry-avatar mystery-character" aria-hidden="true">{(possibilities.length ? possibilities : [example]).map((brand, position) => <div className="mystery-variant" data-active={position === index % Math.max(1, possibilities.length)} key={brand.id}><WearableCharacter brand={brand} look={drawWearable(brand)} /></div>)}</div>
+      <div className="entry-avatar mystery-character" aria-hidden="true">{(possibilities.length ? [possibilities[index % possibilities.length]] : [example]).map((brand) => <div className="mystery-variant" data-active="true" key={brand.id}><WearableCharacter brand={brand} look={drawWearable(brand)} /></div>)}</div>
       <span className="mystery-mark" aria-hidden="true">?</span>
     </section>
-    <footer className="entry-footer"><span>01 / 品牌理解</span><span>品牌 → 角色 → 匹配 → 合作</span><a href="?view=lab">形象实验室 ↗</a></footer>
+    <footer className="entry-footer"><span>01 / 品牌理解</span><span>品牌 → 角色 → 匹配 → 渠道预演</span><a href="?view=cases">查看主要案例 ↗</a><a href="?view=lab">形象实验室 ↗</a></footer>
   </main>;
 }

@@ -1,6 +1,7 @@
 import type { CharacterRecipe } from './characterRecipe';
 import type { BrandProfile } from './brandProfile';
 export interface Brand {
+  fictional?: boolean;
   profile?: BrandProfile;
   id: string;
   name: string;

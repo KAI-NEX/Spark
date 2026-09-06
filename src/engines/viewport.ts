@@ -22,15 +22,17 @@ export function calculateViewportLOD(screen: { x: number; y: number }, _fit: num
   const dx = Math.max(0, -screen.x, screen.x - size.width);
   const dy = Math.max(0, -screen.y, screen.y - size.height);
   if (Math.hypot(dx, dy) > LOD_CONFIG.dormantMargin) return 'dormant';
-  if (screen.x < LOD_CONFIG.edgeInset || screen.y < LOD_CONFIG.edgeInset || screen.x > size.width - LOD_CONFIG.edgeInset || screen.y > size.height - LOD_CONFIG.edgeInset) return 'marker';
-  const halfWidth = LOD_CONFIG.detailHalfWidth;
+  // Let the canvas clip artwork at its edges. Edge padding must not change a
+  // visible node's stage, otherwise equal-radius peers disagree by direction.
+  if (dx > 0 || dy > 0) return 'marker';
 
-  const distanceFromCenter = Math.max(Math.abs(screen.x - size.width / 2) / (size.width / 2), Math.abs(screen.y - size.height / 2) / (size.height / 2));
-  // Screen scale controls disclosure; relation scores do not decide who is readable.
-  const effectiveZoom = view.zoom * (1 - LOD_CONFIG.edgeFalloff * distanceFromCenter ** 2);
-  const fits = (halfHeight: number, width: number = halfWidth) => screen.x >= width + 8 && screen.x <= size.width - width - 8 && screen.y >= halfHeight + 8 && screen.y <= size.height - halfHeight - 8 && !size.occlusions?.some(bounds => screen.x + width > bounds.left && screen.x - width < bounds.right && screen.y + halfHeight > bounds.top && screen.y - halfHeight < bounds.bottom);
-  if (effectiveZoom >= LOD_CONFIG.fullMinZoom && fits(100)) return 'full';
-  if (effectiveZoom >= LOD_CONFIG.portraitMinZoom && fits(42, size.width <= 640 ? 46 : halfWidth)) return 'portrait';
+  // Euclidean camera distance in world units: equal-distance nodes get equal detail,
+  // regardless of angle, identity or selection. Panning can bring any score into focus.
+  const distanceFromCenter = Math.hypot(screen.x - size.width / 2, screen.y - size.height / 2) / view.zoom;
+  const detailRadius = Math.min(size.width, size.height) * LOD_CONFIG.distanceScale;
+  const effectiveZoom = view.zoom / (1 + (distanceFromCenter / detailRadius) ** 2);
+  if (effectiveZoom >= LOD_CONFIG.fullMinZoom) return 'full';
+  if (effectiveZoom >= LOD_CONFIG.portraitMinZoom) return 'portrait';
   return 'marker';
 }
 
@@ -49,34 +51,44 @@ export function zoomAt(view: Viewport, factor: number, anchorX = 0, anchorY = 0)
   return { x: anchorX - (anchorX - view.x) * ratio, y: anchorY - (anchorY - view.y) * ratio, zoom };
 }
 
-/** Loose camera bounds; no hard wall at the edge of the initial viewport. */
-export function constrainViewport(view: Viewport, size: ViewportSize): Viewport {
-  const limitX = Math.max(0, VIEW_CONFIG.worldWidth * view.zoom / 2 - size.width / 2 + VIEW_CONFIG.panPadding);
-  const limitY = Math.max(0, VIEW_CONFIG.worldHeight * view.zoom / 2 - size.height / 2 + VIEW_CONFIG.panPadding);
-  return { ...view, x: Math.max(-limitX, Math.min(limitX, view.x)), y: Math.max(-limitY, Math.min(limitY, view.y)) };
+/** The canvas is unbounded; zoom is bounded separately by zoomAt. */
+export function constrainViewport(view: Viewport, _size: ViewportSize): Viewport {
+  void _size;
+  return { ...view };
 }
 
-
-/** Reserve readable space from the center outward. Only disclosure changes, never location or fit. */
-export function resolveLODOverlap(nodes: readonly SceneNode[], levels: ReadonlyMap<string, LOD>, view: Viewport, size: ViewportSize): ReadonlyMap<string, LOD> {
+/** Crowding may shrink a whole radial detail band, never pick winners by node ID.
+ * Every visible peer at the same camera distance keeps the same presentation.
+ */
+export function resolveLODByDistance(nodes: readonly SceneNode[], levels: ReadonlyMap<string, LOD>, view: Viewport, size: ViewportSize): ReadonlyMap<string, LOD> {
+  const candidates = nodes.map(node => {
+    const screen = getNodeScreenPosition(node.position, view, size);
+    return { id: node.brand.id, screen, distance: Math.hypot(screen.x - size.width / 2, screen.y - size.height / 2) };
+  });
   const result = new Map(levels);
-  const occupied: { x: number; y: number; halfWidth: number; halfHeight: number }[] = [];
-  const priority = nodes.map(node => ({ node, screen: getNodeScreenPosition(node.position, view, size) })).sort((a,b) =>
-    Number(b.node.isFocus) - Number(a.node.isFocus) ||
-    Math.hypot(a.screen.x-size.width/2,a.screen.y-size.height/2) - Math.hypot(b.screen.x-size.width/2,b.screen.y-size.height/2) || a.node.brand.id.localeCompare(b.node.brand.id));
-  for (const {node, screen} of priority) {
-    let lod = result.get(node.brand.id) ?? 'dormant';
-    if (lod === 'dormant' || lod === 'marker') continue;
-    const stages: LOD[] = lod === 'full' ? ['full','portrait','marker'] : lod === 'blurred' ? ['portrait','marker'] : [lod,'marker'];
-    for (const stage of stages) {
-      lod = stage;
-      if (stage === 'marker') break;
-      const halfWidth = stage === 'portrait' && size.width <= 640 ? 46 : 68, halfHeight = stage === 'full' ? 100 : 42;
-      if (!occupied.some(box => Math.abs(screen.x-box.x) < halfWidth+box.halfWidth+6 && Math.abs(screen.y-box.y) < halfHeight+box.halfHeight+6)) {
-        occupied.push({...screen,halfWidth,halfHeight}); break;
-      }
+  // Each pass lowers at least one node; there are only two detail transitions.
+  for (let pass = 0; pass < nodes.length * 2; pass++) {
+    const visible = candidates.filter(node => ['full', 'portrait'].includes(result.get(node.id)!));
+    let boundary: { lod: LOD; distance: number } | undefined;
+    for (let i = 0; i < visible.length; i++) for (let j = i + 1; j < visible.length; j++) {
+      const a = visible[i], b = visible[j];
+      const aFull = result.get(a.id) === 'full', bFull = result.get(b.id) === 'full';
+      // Different bands have different silhouettes; their label boxes must not
+      // collapse the entire head band around a single detailed character.
+      if (aFull !== bFull) continue;
+      const width = (aFull ? 68 : 50) + (bFull ? 68 : 50) + 6;
+      const height = (aFull ? 100 : 43) + (bFull ? 100 : 43) + 6;
+      if (Math.abs(a.screen.x - b.screen.x) >= width || Math.abs(a.screen.y - b.screen.y) >= height) continue;
+      const farther = a.distance > b.distance ? a : b;
+      if (!boundary || farther.distance < boundary.distance) boundary = { lod: result.get(farther.id)!, distance: farther.distance };
     }
-    result.set(node.brand.id,lod);
+    if (!boundary) break;
+    for (const node of candidates) {
+      const lod = result.get(node.id);
+      if (node.distance < boundary.distance - .1) continue;
+      if (boundary.lod === 'full' && lod === 'full') result.set(node.id, 'portrait');
+      else if (boundary.lod === 'portrait' && (lod === 'full' || lod === 'portrait')) result.set(node.id, 'marker');
+    }
   }
   return result;
 }

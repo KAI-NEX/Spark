@@ -13,11 +13,12 @@ const lowerPhrases = Object.fromEntries(Object.entries(phrases).map(([a,b])=>[a.
 const pattern = new RegExp(Object.keys(lowerPhrases).sort((a,b)=>b.length-a.length).map(value=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'gi');
 export function chineseLabel(text:string) { return phrases[text] ?? lowerPhrases[text.toLowerCase()] ?? text; }
 const intents:Record<string,string> = {
+  'lantern-loom':'为日常空间制作可拆装的限量灯具。','seed-basin':'开展城市种植课程与社区快闪体验。','grain-orbit':'通过谷物饮食与食谱分享连接家庭。','tide-parcel':'以可回收包装开发日常护理系列。','frame-walk':'创作有关城市记忆的影像、图录与展览。','paper-comet':'制作支持日常创作的趣味文具。','pedal-pulse':'开发骑行产品并组织社区快闪骑行。','paw-patch':'为日常散步设计耐用的宠物用品。','dune-glass':'用回收玻璃制作限量手工器物。','scent-archive':'以气味产品和展览记录地方记忆。','sun-grid':'制作服务户外体验的便携能源产品。','play-fold':'以开放式玩具开展亲子文化项目。',
   'memory-block':'制作实验性实体产品和限量器物系列。','form-works':'共同制作实验性实体产品和限量器物系列。','matter-matter':'把材料研究转化为实验性实体产品。','still-studio':'制作实验性实体产品和限量器物系列。','clay-county':'以数字体验和文化展览重新诠释工艺。','latent-lab':'以数字体验和文化展览连接工艺与人工智能。','fold-supply':'制作采用可重复使用包装的实验产品。','common-objects':'为日常空间打造限量实体产品。','circuit-house':'探索实验产品原型和趣味数字体验。','open-room':'开展快闪零售体验和文化展览。','field-museum':'为新受众创造文化展览和数字体验。','afterhours-press':'与新兴创作者共创编辑内容和文化项目。','signal-paper':'围绕创意工作制作内容和传播活动。','moss-tea':'创造饮茶仪式和快闪零售体验。','daybreak-coffee':'开展咖啡体验与快闪聚会。','soft-measure':'以限量穿戴系列探索实验性实体产品。','strata-studio':'打造文化展览和快闪零售空间。','little-myth':'围绕民间故事打造趣味数字体验和文化展览。','neighbourhood':'组织快闪聚会和文化项目。','hearth-foods':'通过时令品鉴菜单创造饮食体验。','tiny-assembly':'制作数字体验和文化展览。','loop-fibre':'用循环纺织材料开发实验产品。','point-practice':'创作数字体验和编辑内容。','line-of-work':'优化工业采购和企业货运流程。','bulk-union':'优化大批量通用零件的工业采购。','clear-ledger':'改善税务合规与法定财务报告。','wild-north':'组织户外探索和荒野远足。','quiet-type':'通过声音创造文化展览和实验数字体验。',
 };
 export function displayBrand(brand:Brand):Brand {
   if(!intents[brand.id]) return brand;
   const translate=(text:string)=>text.replace(pattern,word=>lowerPhrases[word.toLowerCase()]).replace(/ and /g,'与').replace(/, /g,'、').replace(/\.$/,'。');
   const category=translate(brand.category);
-  return {...brand,category,summary:`${brand.name} 是一家${category}，正在探索新的合作方式。`,offers:translate(brand.offers),needs:translate(brand.needs),intent:intents[brand.id],audience:translate(brand.audience),identity:translate(brand.identity),constraints:brand.id==='bulk-union'?'仅接受十万件以上工业订单，不接受原型或限量项目。':'接受试点与跨领域合作，没有规模或地域限制。'};
+  return {...brand,category,summary:brand.fictional ? brand.summary : `${brand.name} 是一家${category}，正在探索新的合作方式。`,offers:translate(brand.offers),needs:translate(brand.needs),intent:intents[brand.id],audience:translate(brand.audience),identity:translate(brand.identity),constraints:brand.id==='bulk-union'?'仅接受十万件以上工业订单，不接受原型或限量项目。':'接受试点与跨领域合作，没有规模或地域限制。'};
 }

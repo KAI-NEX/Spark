@@ -1,4 +1,18 @@
-# Brand Gravity Demo V0
+# Brand Relations · 品牌发现与渠道预演
+
+当前主流程：品牌资料与角色 → Gravity / 抽卡 → 申请建联 → 原 COLLIDER 无限画板 → 对话生成、修订与导出。平台使用蓝、黑、白的统一 VI，双方渠道内容各自沿用发布方的品牌视觉，只增加合作方署名与内容互荐。
+
+- 首页 `/`：居中 Logo 和角色入口。
+- 主要案例 `/?view=cases`：早八咖啡 × 留白书店，虚构的一对一渠道互荐案例。
+- 联名项目 `/#projects`：保存在本机的项目与历史预演。
+- 原画板 `/canvas.html?relation=<project-id>`：自动带入双方资料、两张模板预演和可恢复的原生对话会话。旧 `/#project=<id>` 链接自动转入画板。
+- 原参考案例保留在 `/?view=legacy-cases`；历史四步工作台源文件保留，已退出主流程。
+
+`canvas-entry.tsx` 直接导入同事项目的 `web/App.tsx`、`ProductionWorkspace` 和 `ProductionCanvas`，服务端复用原 `createHttpServer` 与 `ColliderRuntime`。宿主仅适配已保存的品牌/预演数据、导航及统一样式。详细说明见 [COLLIDER 接入记录](docs/COLLIDER-INTEGRATION.md)。
+
+当前本机已连接 Codex 文字服务。图片 API 未配置时，两张图片明确标为模板预演，文字方案与逐件视觉提示词通过原流程生成；不会将模板或提示词标为实时 AI 出图。所有建联与确认均为本地演示，不发送真实邀约。
+
+## 早期原型记录
 
 新对话请先阅读 / Start a new conversation with: [接续说明 / Handoff](docs/HANDOFF-CN-EN.md)。
 
@@ -42,6 +56,10 @@ pnpm build
 - 选中的资料与形象保存在当前浏览器的 `brand-gravity-characters-v1` 本地存储中，刷新后仍可从图鉴选择；不跨设备同步。最多 40 家新增公司。原始 28 家示例不变。
 
 ### OpenAI 配置
+
+联名提案使用本地 Codex 时（`BRAND_AI_PROVIDER=codex`），默认使用 `gpt-5.4-mini` 和低推理强度，优先快速生成简洁初稿。可在服务端 `.env.local` 设置 `CODEX_MODEL`、`CODEX_REASONING_EFFORT`（`low/medium/high/xhigh`）后重启服务；状态接口与新提案记录会显示实际请求的模型。JSON 结构和提案约束校验仍会执行。
+
+默认「快速生成联名初稿」通过 `/api/collider/quick-proposal` 一次生成名称、合作点子、双方分工和待确认事项，结果可直接填入邀请并在当前浏览器会话恢复。单字段建议同样使用精简提示，只发送相关品牌资料与草稿。原有九轮流程保留在「多轮深化提案」中，历史记录不受影响；快速初稿不代表已完成多轮研究或审查。
 
 将 `.env.example` 的内容复制到新建的 `.env.local`，填写服务端 `OPENAI_API_KEY`，然后重启 `pnpm dev`。不要给密钥加 `VITE_` 前缀，也不要放在浏览器或提交到仓库。默认模型 `gpt-4.1-mini`，可通过 `OPENAI_MODEL` 修改为支持 Structured Outputs 的模型。
 

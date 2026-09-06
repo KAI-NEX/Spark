@@ -19,7 +19,7 @@ describe('Gravity semantic zoom', () => {
     expect(render('portrait')).toContain('brand-bust');
     expect(render('portrait')).not.toContain('node-capability');
     expect(render('blurred')).not.toContain('node-capability');
-    expect(render('blurred')).toContain('wearable-character');
+    expect(render('blurred')).toContain('semantic-character');
     expect(render('simple')).not.toContain('/100');
     expect(render('full')).toContain('/100');
     const exploratory = renderToStaticMarkup(createElement(BrandNode, {node: {...node, exploratory: true}, lod: 'full', selected: false, onSelect: () => {}}));

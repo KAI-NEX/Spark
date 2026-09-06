@@ -1,10 +1,12 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { flushSync } from 'react-dom';
 import type { Brand, RelationResult } from '../domain/types';
 import { WearableCharacter } from './WearableCharacter';
 import { drawWearable } from '../domain/drawWardrobe';
 import { Icon } from './Icon';
+import { BrandVisualKey } from './BrandVisualKey';
+import { BrandCharacter } from './BrandCharacter';
 
 export function shuffleBrands(brands: readonly Brand[], ownId: string): Brand[] {
   const pool = brands.filter(brand => brand.id !== ownId);
@@ -52,11 +54,17 @@ export function DrawPage({ brands, home, relations, onChoose }: { brands: readon
     if (card) observer.observe(card);
     return () => observer.disconnect();
   }, [selected]);
-  const finishDismiss = () => {
+  const finishDismiss = useCallback(() => {
     dialog.current?.close();
     flushSync(() => { setSelected(null); setClosing(false); });
     if (selected) cardRefs.current.get(selected)?.focus({ preventScroll: true });
-  };
+  }, [selected]);
+  useEffect(() => {
+    if (!closing) return;
+    // Also close if animationend is lost (background tab, motion preference change).
+    const timer = window.setTimeout(finishDismiss, 520);
+    return () => window.clearTimeout(timer);
+  }, [closing, finishDismiss]);
   const dismiss = () => {
     if (closing || !selected) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { finishDismiss(); return; }
@@ -77,8 +85,8 @@ export function DrawPage({ brands, home, relations, onChoose }: { brands: readon
     <dialog ref={dialog} className={`draw-dialog ${closing ? 'is-closing' : ''}`} aria-labelledby="draw-dialog-title" onCancel={event => { event.preventDefault(); dismiss(); }} onClick={event => { if (event.target === event.currentTarget) dismiss(); }}>
       {chosen ? <div className="draw-dialog-motion" key={chosen.id} onAnimationEnd={event => { if (closing && event.target === event.currentTarget && event.animationName === 'spring-card-close') finishDismiss(); }}><div className="draw-dialog-back" aria-hidden="true"><DrawCharacterFace brand={chosen} /></div><div className="draw-dialog-content">
         <button className="page-close" autoFocus onClick={dismiss} aria-label="返回卡牌"><Icon name="back" /></button>
-        <div className="draw-dialog-scroll"><p className="mono">品牌资料</p><h2 id="draw-dialog-title">{chosen.name}</h2><p>{chosen.category}</p><p className="draw-dialog-score">{relation ? `${relation.collaborationFit} / 100 · 智能评价` : '资料待补充'}</p>
-        <dl>{([['品牌介绍', chosen.summary], ['已有能力', chosen.offers], ['寻找什么', chosen.needs], ['联名目标', chosen.intent], ['目标消费者', chosen.audience], ['品牌气质', chosen.identity], ['合作边界', chosen.constraints], ['案例与依据', chosen.supportingEvidence], ['合作可能', relation?.reason]] as const).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value || '待补充'}</dd></div>)}</dl></div>
+        <div className="draw-dialog-scroll"><div className="draw-dialog-identity"><BrandCharacter brand={chosen}/><div><p className="mono">品牌资料</p><h2 id="draw-dialog-title">{chosen.name}</h2><p>{chosen.category}</p></div></div><p className="draw-dialog-score">{relation ? `${relation.collaborationFit} / 100 · 智能评价` : '资料待补充'}</p>
+        <BrandVisualKey brand={chosen} compact/><dl>{([['品牌介绍', chosen.summary], ['已有能力', chosen.offers], ['寻找什么', chosen.needs], ['联名目标', chosen.intent], ['目标消费者', chosen.audience], ['品牌气质', chosen.identity], ['合作边界', chosen.constraints], ['案例与依据', chosen.supportingEvidence], ['合作可能', relation?.reason]] as const).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value || '待补充'}</dd></div>)}</dl></div>
         <button className="flow-primary" onClick={() => { dialog.current?.close(); onChoose(chosen.id); }}>选择这个伙伴<Icon name="arrow" /></button>
       </div></div> : null}
     </dialog>

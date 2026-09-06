@@ -1,17 +1,16 @@
 import { displayBrand } from './domain/chinese';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { mockDataSource } from './data/source';
 import { calculateGravityPositions } from './engines/gravity';
 import { GravityWorld } from './components/GravityWorld';
 import { RelationInspector } from './components/RelationInspector';
 import { CharacterEntry } from './components/CharacterEntry';
+import CanvasRedirect, { canvasUrl } from './collaboration/CanvasRedirect';
+import { createProject } from './collaboration/api';
+import { visualForBrand } from './collaboration/fixtures';
 import { BrandIntakePage } from './components/BrandIntakePage';
 import { DrawPage } from './components/DrawPage';
-import { CollaborationInvitation } from './components/CollaborationInvitation';
-import { invitationReducer } from './domain/invitation';
-import type { Invitation, InvitationAction } from './domain/invitation';
 import { PartnerDetailPage } from './components/PartnerDetailPage';
-import { BrandCharacter } from './components/BrandCharacter';
 import { Icon } from './components/Icon';
 import './components/characters.css';
 import './components/matching-flow.css';
@@ -19,7 +18,16 @@ import './components/invitation-flow.css';
 import { missingMatchingFields } from './domain/brandIntake';
 import { discoverRelations, gravityExplorationRelations } from './domain/discovery';
 import { loadCustomBrands, saveCustomBrands } from './engines/characterGenome';
-import type { Brand, WorldDataSource } from './domain/types';
+import type { Brand, Viewport, WorldDataSource } from './domain/types';
+
+const BrandAtlas = lazy(()=>import('./components/BrandAtlas'));
+const ProjectsPage = lazy(() => import('./collaboration/ProjectsPage'));
+type AppPage = 'entry' | 'intake' | 'matching' | 'detail' | 'projects' | 'project';
+function readRoute(): { page: AppPage; projectId: string; mode: 'draw' | 'gravity' } {
+  const hash = window.location.hash.slice(1) || (new URLSearchParams(window.location.search).get('view') === 'cases' ? 'projects' : '');
+  const id = new URLSearchParams(hash).get('project') || '';
+  return { page: /^project-[a-f0-9-]{36}$/.test(id) ? 'project' : hash === 'projects' ? 'projects' : hash === 'intake' ? 'intake' : ['explore', 'draw'].includes(hash) ? 'matching' : 'entry', projectId: id, mode: hash === 'draw' ? 'draw' : 'gravity' };
+}
 
 export default function App({ dataSource = mockDataSource, homeBrandId = 'memory-block', initialPage = 'entry', demoBrand, localOnly = false }: { dataSource?: WorldDataSource; homeBrandId?: string; initialPage?: 'entry' | 'intake' | 'matching'; demoBrand?: Brand; localOnly?: boolean }) {
   const originals = useMemo(() => dataSource.loadBrands(1), [dataSource]);
@@ -28,14 +36,28 @@ export default function App({ dataSource = mockDataSource, homeBrandId = 'memory
   const [ownBrandId, setOwnBrandId] = useState(() => demoBrand?.id ?? customBrands.at(-1)?.id ?? homeBrandId);
   const home = brands.find(brand => brand.id === ownBrandId) ?? brands[0];
   const [editingBrand, setEditingBrand] = useState(false);
-  const [page, setPage] = useState<'entry' | 'intake' | 'matching' | 'detail' | 'next'>(initialPage);
-  const [mode, setMode] = useState<'gravity' | 'draw'>('gravity');
+  const [page, setCurrentPage] = useState<AppPage>(() => initialPage !== 'entry' ? initialPage : readRoute().page);
+  const [projectId, setProjectId] = useState(() => readRoute().projectId);
+  const [mode, setMode] = useState<'gravity' | 'draw'>(() => readRoute().mode);
+  const [projectError, setProjectError] = useState('');
+  const [openingProject, setOpeningProject] = useState(false);
+  const projectOpening = useRef(false);
+  const setPage = (next: AppPage) => {
+    setCurrentPage(next);
+    const hash = next === 'projects' ? 'projects' : next === 'intake' ? 'intake' : ['matching', 'detail'].includes(next) ? 'explore' : '';
+    window.history.pushState(null, '', `${window.location.pathname}${window.location.search}${hash ? `#${hash}` : ''}`);
+  };
+  const openProject = (id: string) => { window.location.assign(canvasUrl(id)); };
+  const explore = (next: 'gravity' | 'draw' = 'gravity') => { setMode(next); setCurrentPage('matching'); window.history.pushState(null, '', `${window.location.pathname}${window.location.search}#${next === 'draw' ? 'draw' : 'explore'}`); };
+  useEffect(() => { const pop = () => { const route = readRoute(); setCurrentPage(route.page); setProjectId(route.projectId); setMode(route.mode); }; window.addEventListener('popstate', pop); return () => window.removeEventListener('popstate', pop); }, []);
   const [partnerId, setPartnerId] = useState<string | null>(null);
-  const [invitations, setInvitations] = useState<Record<string, Invitation>>({});
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [page, mode]);
   const [focusId, setFocusId] = useState(home.id);
   const [selectedId, setSelectedId] = useState('form-works');
   const [resetKey, setResetKey] = useState(0);
+  const [atlasOpen,setAtlasOpen] = useState(false);
+  const [locateRequest,setLocateRequest] = useState<{id:string;revision:number}|null>(null);
+  const cameraMemory = useRef<{view:Viewport;resetKey:number}|null>(null);
   const [fieldRevision, setFieldRevision] = useState(0);
   const focus = brands.find(brand => brand.id === focusId) ?? home;
   // Only focus, My Brand reload, or updated snapshots invalidate the relation field.
@@ -75,27 +97,31 @@ export default function App({ dataSource = mockDataSource, homeBrandId = 'memory
     setOwnBrandId(brand.id); setFocusId(brand.id); setSelectedId(discoverRelations(brand, dataSource.getRelations(brand, brands))[0]?.targetBrandId || brand.id); setMode('gravity'); setPage('matching'); setResetKey(key => key + 1);
   };
   const choosePartner = (id: string) => { if (id === home.id) return; setPartnerId(id); setPage('detail'); };
-  const invitationKey = `${home.id}:${partnerId}`;
-  const startInvitation = () => {
-    if (!partner) return;
-    setInvitations(previous => previous[invitationKey] ? previous : { ...previous, [invitationKey]: { status: 'draft', version: 1, feedback: '', draft: { title: `${home.name} × ${partner.name}`, concept: '', contribution: home.offers, ask: '', diagnostics: ['', '', ''] } } });
-    setPage('next');
+  const startInvitation = async () => {
+    if (!partner || projectOpening.current) return;
+    projectOpening.current = true; setOpeningProject(true); setProjectError('');
+    try { const project = await createProject({ a: { brand: displayBrand(home), visual: visualForBrand(home) }, b: { brand: displayBrand(partner), visual: visualForBrand(partner) } }); openProject(project.id); }
+    catch (reason) { setProjectError(reason instanceof Error ? reason.message : '创建项目失败，请重试。'); }
+    finally { projectOpening.current = false; setOpeningProject(false); }
   };
-  const dispatchInvitation = (action: InvitationAction) => setInvitations(previous => previous[invitationKey] ? { ...previous, [invitationKey]: invitationReducer(previous[invitationKey], action) } : previous);
   return <div className={`app-shell flow-shell page-${page} mode-${mode}`} data-character-style="facet">
-    <header className="flow-header">
-      <button className="brand-lockup flow-logo" onClick={() => setPage('entry')} aria-label="品牌联名 首页"><img src="/vi/mark-black.svg" alt="" /><span>品牌联名</span></button>
-      {page === 'matching' ? <nav className="mode-switch" aria-label="匹配模式"><button title="引力匹配" aria-label="引力匹配" aria-pressed={mode === 'gravity'} onClick={() => setMode('gravity')}><Icon name="orbit" /></button><button title="抽卡匹配" aria-label="抽卡匹配" aria-pressed={mode === 'draw'} onClick={() => setMode('draw')}><Icon name="cards" /></button></nav> : null}
-      {page !== 'entry' && page !== 'intake' ? <button className="my-character" aria-label="编辑角色" onClick={() => {setEditingBrand(true);setPage('intake');}}><BrandCharacter brand={home} /><span>编辑角色<strong>{home.name}</strong></span></button> : null}
+    <header className="flow-header br-header">
+      <button className="brand-lockup flow-logo br-lockup" onClick={() => setPage('entry')} aria-label="返回首页"><img src="/vi/mark-black.svg" alt="" /><span>Brand Relations</span></button>
+      <nav className="br-nav" aria-label="主导航"><button aria-current={['matching', 'detail'].includes(page) ? 'page' : undefined} onClick={() => explore()}>探索品牌</button><button aria-current={['projects', 'project'].includes(page) ? 'page' : undefined} onClick={() => setPage('projects')}>联名项目</button><button aria-current={page === 'intake' ? 'page' : undefined} onClick={() => { setEditingBrand(true); setPage('intake'); }}>品牌资料</button></nav>
+      <span className="br-local-label">本地演示</span>
     </header>
-    {page === 'entry' ? <CharacterEntry brands={brands} example={home} onCreate={() => { setEditingBrand(Boolean(home.profile)); setPage('intake'); }} /> : page === 'intake' ? <BrandIntakePage localOnly={localOnly} initialBrand={editingBrand || localOnly ? home : undefined} onBack={() => setPage(editingBrand ? 'matching' : 'entry')} onEnter={enter} /> : page === 'detail' && partner ? <PartnerDetailPage home={displayBrand(home)} partner={displayBrand(partner)} relation={ownRelationMap.get(partner.id)} onClose={() => setPage('matching')} onContact={startInvitation} /> : page === 'next' && partner && invitations[invitationKey] ? <CollaborationInvitation localOnly={localOnly} key={invitationKey} home={displayBrand(home)} partner={displayBrand(partner)} invitation={invitations[invitationKey]} dispatch={dispatchInvitation} onBack={() => setPage('detail')} /> : mode === 'draw' ? <DrawPage key={home.id} brands={brands.map(displayBrand)} home={displayBrand(home)} relations={ownRelationMap} onChoose={choosePartner} /> : <>
-    <div className="gravity-toolbar"><span>智能匹配 <strong data-testid="current-focus">{focus.name}</strong></span><div><button onClick={goHome}><Icon name="home" /><span>回到我的品牌</span></button><button disabled={selected.id === home.id && focus.id === home.id} onClick={() => selected.id !== focus.id ? onSetFocus(selected.id) : setResetKey(key => key + 1)}><Icon name="reset" /><span>{selected.id === focus.id ? '回到聚焦伙伴' : '聚焦这个伙伴'}</span></button></div></div>
+    {projectError ? <p className="br-notice" role="alert">{projectError}</p> : null}
+    {openingProject ? <p className="br-loading-line" role="status">正在带入双方资料，打开渠道预演画板…</p> : null}
+
+    {page === 'entry' ? <CharacterEntry brands={brands} example={home} onCreate={() => { setEditingBrand(Boolean(home.profile)); setPage('intake'); }} /> : page === 'intake' ? <BrandIntakePage localOnly={localOnly} initialBrand={editingBrand || localOnly ? home : undefined} onBack={() => setPage('entry')} onEnter={enter} /> : page === 'detail' && partner ? <PartnerDetailPage home={displayBrand(home)} partner={displayBrand(partner)} relation={ownRelationMap.get(partner.id)} onClose={() => setPage('matching')} onContact={startInvitation} /> : page === 'projects' ? <Suspense fallback={<p className="br-empty">正在打开项目…</p>}><ProjectsPage brands={brands} onOpen={openProject} onExplore={() => explore()} /></Suspense> : page === 'project' && projectId ? <Suspense fallback={<p className="br-empty">正在打开共创工作台…</p>}><CanvasRedirect id={projectId} /></Suspense> : mode === 'draw' ? <><div className="br-draw-nav"><button className="br-text-button" onClick={() => explore()}>← 返回 Gravity</button><span>抽卡 · 给意外一次机会</span></div><DrawPage key={home.id} brands={brands.map(displayBrand)} home={displayBrand(home)} relations={ownRelationMap} onChoose={choosePartner} /></> : <>
+    <div className="gravity-toolbar"><div className="br-discovery-modes"><button aria-pressed={true} onClick={() => explore('gravity')}>Gravity</button><button aria-pressed={false} onClick={() => explore('draw')}>抽卡</button></div><span>智能匹配 <strong data-testid="current-focus">{focus.name}</strong></span><div><button onClick={()=>setAtlasOpen(true)} aria-label="打开品牌图鉴">品牌图鉴 <span>{brands.length}</span></button><button onClick={goHome}><Icon name="home" /><span>回到我的品牌</span></button><button disabled={selected.id === home.id && focus.id === home.id} onClick={() => selected.id !== focus.id ? onSetFocus(selected.id) : setResetKey(key => key + 1)}><Icon name="reset" /><span>{selected.id === focus.id ? '回到聚焦伙伴' : '聚焦这个伙伴'}</span></button></div></div>
     <main className="workspace">
-      <GravityWorld brands={brands} focus={focus} positions={positions} relations={relationMap} selectedId={selected.id} resetKey={resetKey} onInspect={onInspect} />
+      <GravityWorld brands={brands} focus={focus} positions={positions} relations={relationMap} selectedId={selected.id} resetKey={resetKey} onInspect={onInspect} locateRequest={locateRequest} cameraMemory={cameraMemory}/>
       <RelationInspector focus={displayBrand(focus)} target={displayBrand(selected)} relation={relationMap.get(selected.id)} count={brands.length} onMatch={selected.id !== home.id ? () => choosePartner(selected.id) : undefined} />
     </main>
     <footer className="discovery-footer"><span>{focus.name} · {visibleRelations.length} 条连接线索{focus.id !== home.id ? ' · 当前查看伙伴的关系' : ''}</span>{missing.length ? <><p>建议上传{home.profile?.gaps.length ? home.profile.gaps.slice(0, 2).map(gap => gap.material).join('、') : missing.slice(0, 3).map(field => field.label).join('、')}，让连接更有依据。</p><button onClick={() => { setEditingBrand(true); setPage('intake'); }}>补充品牌信息<Icon name="arrow" /></button></> : <p>可聚焦其他品牌，探索它的智能连接。</p>}</footer>
     </>}
+    {atlasOpen?<Suspense fallback={null}><BrandAtlas brands={brands} onClose={()=>setAtlasOpen(false)} onLocate={id=>{setSelectedId(id);setLocateRequest(previous=>({id,revision:(previous?.revision??0)+1}));setAtlasOpen(false);}}/></Suspense>:null}
     <span className="sr-only" role="status" aria-live="polite">当前聚焦：{focus.name}。已选品牌：{selected.name}。</span>
   </div>;
 }

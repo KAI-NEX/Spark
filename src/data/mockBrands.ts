@@ -1,5 +1,6 @@
 import type { Brand } from '../domain/types';
 import { hash } from '../domain/hash';
+import { fictionalProducts } from './fictionalProducts';
 
 // The natural-language snapshot is the boundary. No hidden pair-score table.
 type Fixture = [string, string, string, string, string, string, string, string, string?];
@@ -32,6 +33,18 @@ const fixtures: Fixture[] = [
   ['clear-ledger', 'Clear Ledger', 'Accounting service', 'Tax reporting, audit preparation and payroll.', 'Compliance training and bookkeeping automation.', 'Improve tax compliance and statutory financial reporting.', 'Accountants and finance departments.', 'Conventional, formal, risk-averse.'],
   ['wild-north', 'Wild North', 'Outdoor community', 'Community building, event production and content production.', 'Textile development and distribution.', 'Host outdoor adventures and wilderness expeditions.', 'Hikers, outdoor athletes and nature lovers.', 'Adventurous, sustainable, independent.'],
   ['quiet-type', 'Quiet Type', 'Sound studio', 'Sound design, content production and digital interaction.', 'Spatial design and cultural storytelling.', 'Create cultural exhibitions and experimental digital experiences through sound.', 'Culture lovers, digital creatives and musicians.', 'Experimental, thoughtful, curious.'],
+  ['lantern-loom', 'Lantern Loom', '灯具工坊', 'Traditional craft, product design and small-batch manufacturing.', 'Sustainable materials and distribution.', 'Create limited physical products for everyday spaces.', 'Designers, home enthusiasts and collectors.', 'Warm, tactile, sustainable.'],
+  ['seed-basin', 'Seed Basin', '城市园艺品牌', 'Product design, community building and event production.', 'Packaging and distribution.', 'Create pop-up retail experiences and urban growing workshops.', 'Families, local communities and nature lovers.', 'Warm, open, sustainable.'],
+  ['grain-orbit', 'Grain Orbit', '谷物烘焙工坊', 'Food development, traditional craft and publishing.', 'Packaging and retail space.', 'Create food experiences and editorial content about grains.', 'Food lovers, readers and families.', 'Thoughtful, warm, independent.'],
+  ['tide-parcel', 'Tide Parcel', '日常护理品牌', 'Material development, product design and manufacturing.', 'Sustainable materials and packaging.', 'Create experimental physical products with reusable packaging.', 'Environmentally conscious consumers and home enthusiasts.', 'Precise, sustainable, tactile.'],
+  ['frame-walk', 'Frame Walk', '影像工作室', 'Content production, visual direction and cultural storytelling.', 'Publishing and exhibition curation.', 'Create cultural exhibitions and editorial content about cities.', 'Digital creatives, culture lovers and readers.', 'Independent, curious, thoughtful.'],
+  ['paper-comet', 'Paper Comet', '纸品文具品牌', 'Product design, packaging and sustainable materials.', 'Small-batch manufacturing and distribution.', 'Create playful physical products for everyday creativity.', 'Students, designers and families.', 'Playful, sustainable, open.'],
+  ['pedal-pulse', 'Pedal Pulse', '城市骑行品牌', 'Product design, manufacturing and community building.', 'Content production and distribution.', 'Create physical products and pop-up retail cycling events.', 'Outdoor athletes, local communities and designers.', 'Practical, adventurous, independent.'],
+  ['paw-patch', 'Paw Patch', '宠物生活品牌', 'Textile development, product design and small-batch manufacturing.', 'Sustainable materials and retail space.', 'Create limited physical products for daily walks.', 'Families, local communities and environmentally conscious consumers.', 'Warm, playful, sustainable.'],
+  ['dune-glass', 'Dune Glass', '再生玻璃工坊', 'Traditional craft, material development and small-batch manufacturing.', 'Product design and distribution.', 'Create limited physical products from reclaimed glass.', 'Collectors, designers and home enthusiasts.', 'Tactile, sustainable, experimental.'],
+  ['scent-archive', 'Scent Archive', '气味设计工作室', 'Product design, cultural storytelling and material research.', 'Packaging and retail space.', 'Create cultural exhibitions and limited physical products about memory.', 'Culture lovers, collectors and home enthusiasts.', 'Thoughtful, tactile, independent.'],
+  ['sun-grid', 'Sun Grid', '便携能源品牌', 'Electronics, production engineering and manufacturing.', 'Product design and distribution.', 'Create experimental physical products for outdoor experiences.', 'Outdoor athletes, makers and environmentally conscious consumers.', 'Practical, precise, sustainable.'],
+  ['play-fold', 'Play Fold', '开放式玩具品牌', 'Product design, traditional craft and cultural storytelling.', 'Small-batch manufacturing and packaging.', 'Create playful physical products and cultural projects.', 'Families, students and makers.', 'Playful, warm, curious.'],
 ];
 
 const alternateIntents: Record<string, string> = {
@@ -47,13 +60,14 @@ const alternateIntents: Record<string, string> = {
 
 /** New seed varies selected project briefs + character appearance, never random scores. */
 export function generateMockBrands(seed = 1): Brand[] {
-  return fixtures.map(([id, name, category, offers, needs, intent, audience, identity, constraints]) => ({
-    id, name, category,
-    summary: `${name} is a ${category.toLowerCase()} exploring new forms of collaboration.`,
-    offers, needs,
+  const generated = fixtures.map(([id, name, category, offers, needs, intent, audience, identity, constraints]) => ({
+    id, name, category, fictional: true,
+    summary: fictionalProducts[id].summary,
+    offers: `${fictionalProducts[id].products} ${offers}`, needs,
     intent: seed > 1 && hash(`${seed}:${id}`) % 2 === 0 ? alternateIntents[id] ?? intent : intent,
     audience, identity,
     constraints: constraints ?? 'Open to pilots and cross-border collaboration. No size or geographic restrictions.',
     characterSeed: hash(`${seed}:${id}`),
   }));
+  return generated;
 }

@@ -12,9 +12,9 @@ const brand = (id: string) => brands.find(item => item.id === id)!;
 const relation = (a: string, b: string) => calculateMockRelation(brand(a), brand(b));
 
 describe('Mock snapshot and relation contracts', () => {
-  it('provides 28 complete uniquely identified snapshots and repeatable regeneration', () => {
-    expect(brands).toHaveLength(28);
-    expect(new Set(brands.map(item => item.id)).size).toBe(28);
+  it('provides 40 complete uniquely identified snapshots and repeatable regeneration', () => {
+    expect(brands).toHaveLength(40);
+    expect(new Set(brands.map(item => item.id)).size).toBe(40);
     for (const item of brands) {
       for (const key of ['id', 'name', 'summary', 'offers', 'needs', 'intent', 'audience', 'identity', 'constraints'] as const) expect(item[key].length).toBeGreaterThan(0);
       expect(Number.isFinite(item.characterSeed)).toBe(true);
@@ -87,10 +87,35 @@ describe('Gravity layout', () => {
     for (const focus of brands) {
       const relations = mockDataSource.getRelations(focus, brands);
       const positions = calculateGravityPositions(focus.id, relations);
-      expect(positions).toHaveLength(27);
+      expect(positions).toHaveLength(39);
       expect(positions).toEqual(calculateGravityPositions(focus.id, [...relations].reverse()));
       for (const position of positions) expect(Math.hypot(position.x, position.y)).toBeCloseTo(position.radius);
+      const scores = new Map(relations.map(relation => [relation.targetBrandId, relation.collaborationFit]));
+      const byDistance = [...positions].sort((a, b) => a.radius - b.radius);
+      for (let i = 1; i < byDistance.length; i++) {
+        expect(scores.get(byDistance[i - 1].brandId)!).toBeGreaterThanOrEqual(scores.get(byDistance[i].brandId)!);
+        expect(byDistance[i].radius).toBeGreaterThan(byDistance[i - 1].radius);
+      }
     }
+  });
+  it('spreads identical scores across continuous radii without changing relation data', () => {
+    const relations = mockDataSource.getRelations(brands[0], brands).map(relation => ({ ...relation, collaborationFit: 25 }));
+    const before = JSON.stringify(relations);
+    const positions = calculateGravityPositions(brands[0].id, relations);
+    const radii = positions.map(position => position.radius).sort((a, b) => a - b);
+    expect(new Set(radii.map(radius => radius.toFixed(3))).size).toBe(relations.length);
+    expect(radii[0] / radii.at(-1)!).toBeLessThan(.5);
+    expect(positions).toEqual(calculateGravityPositions(brands[0].id, [...relations].reverse()));
+    expect(JSON.stringify(relations)).toBe(before);
+  });
+  it('spreads the strong-fit cluster toward the center instead of leaving a large empty annulus', () => {
+    const relations = mockDataSource.getRelations(brands[0], brands);
+    const positions = calculateGravityPositions(brands[0].id, relations);
+    const radii = positions.map(position => position.radius).sort((a, b) => a - b);
+    expect(radii[0] / radii[Math.floor(radii.length * .65)]).toBeLessThan(.35);
+    expect(calculateGravityPositions('empty', [])).toEqual([]);
+    const single = calculateGravityPositions('one', [relations[0]]);
+    expect(single[0].radius).toBe(fitToDistance(relations[0].collaborationFit));
   });
   it('contains positions only, with no rendering LOD, and reorganizes with focus', () => {
     const first = calculateGravityPositions(brands[0].id, mockDataSource.getRelations(brands[0], brands));

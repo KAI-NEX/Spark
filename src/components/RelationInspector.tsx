@@ -1,12 +1,10 @@
+import { BrandCharacter } from './BrandCharacter';
+import { BrandVisualKey } from './BrandVisualKey';
 import { chineseLabel } from '../domain/chinese';
-import type { Brand, Dimension, RelationResult } from '../domain/types';
-import { RELATION_WEIGHTS } from '../config';
+import type { Brand, RelationResult } from '../domain/types';
+import { EvaluationDimensions } from './EvaluationDimensions';
 import { missingMatchingFields } from '../domain/brandIntake';
 import { Icon } from './Icon';
-const DIMENSIONS: [Dimension, string][] = [
-  ['intentFit', '目标契合'], ['complementarity', '能力互补'],
-  ['audienceExpansion', '受众拓展'], ['chemistry', '创意共鸣'], ['feasibility', '执行可行'],
-];
 export function RelationInspector({ focus, target, relation, count, onMatch }: {
   focus: Brand; target: Brand; relation?: RelationResult; count: number;
   onMatch?: () => void;
@@ -15,7 +13,7 @@ export function RelationInspector({ focus, target, relation, count, onMatch }: {
   const isCurrent = target.id === focus.id;
   return <aside className="inspector" aria-label="合作关系评价" data-selected-id={target.id}>
     <div className="inspector-content">
-      <p className="mono inspector-label">智能评价</p>
+      <div className="inspector-identity"><BrandCharacter brand={target} labelled/><div><p className="mono inspector-label">智能评价</p><BrandVisualKey brand={target} compact/></div></div>
       <div className="relation-pair">{!isCurrent ? <><span>{focus.name}</span><Icon name="arrow" /></> : null}<strong>{target.name}</strong></div>
       {relation ? <>
         <div className="fit-score" data-testid="fit-score"><strong>{relation.collaborationFit}</strong><span>/100</span></div>
@@ -23,12 +21,12 @@ export function RelationInspector({ focus, target, relation, count, onMatch }: {
         <p className="relation-type">{relation.exploratory ? '先认识，再判断' : chineseLabel(relation.relationType)}</p>
         <section className="explanation compact-summary"><h2>品牌概括</h2><p>{target.summary}</p></section>
         <section className="explanation compact-summary"><h2>关系判断</h2><p>{relation.reason}</p></section>
-        <div className="dimensions" aria-label="合作评价维度">
-          {DIMENSIONS.map(([key, label]) => <div className="dimension" key={key} title={`${label}: ${relation[key]}/100 · ${RELATION_WEIGHTS[key] * 100}% 权重`}><span>{label}</span><meter min="0" max="100" value={relation[key]} aria-label={label} /><span className="dimension-value">{relation[key]}</span></div>)}
-        </div>
-        {onMatch ? <button className="flow-primary inspector-match" onClick={onMatch}>选择这个伙伴<Icon name="arrow" /></button> : null}
-      </> : <section className="explanation"><h2>{onMatch ? '已聚焦这个伙伴' : '当前品牌'}</h2><p>{target.summary}</p>{onMatch ? <button className="flow-primary inspector-match" onClick={onMatch}>选择这个伙伴<Icon name="arrow" /></button> : null}</section>}
+        <EvaluationDimensions relation={relation} />
+      </> : <section className="explanation"><h2>{onMatch ? '已聚焦这个伙伴' : '当前品牌'}</h2><p>{target.summary}</p></section>}
     </div>
-    <p className="world-meta mono">演示品牌库 · {count} 个品牌 · 评分仅供参考</p>
+    <div className="inspector-actions">
+      {onMatch ? <button className="flow-primary inspector-match" onClick={onMatch}>选择这个伙伴<Icon name="arrow" /></button> : null}
+      <p className="world-meta mono">演示品牌库 · {count} 个品牌 · 评分仅供参考</p>
+    </div>
   </aside>;
 }

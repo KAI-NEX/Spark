@@ -4,7 +4,7 @@ import type { Brand, LOD } from '../domain/types';
 import { describeBrandCharacter } from '../engines/character';
 import { CapabilityGlyph } from './CapabilityIcon';
 import { WearableCharacter } from './WearableCharacter';
-import { BASE_AVATAR, brandWearable } from '../domain/wearables';
+import { brandWearable } from '../domain/wearables';
 import { ParametricCharacter } from './ParametricCharacter';
 
 /** Original vector artwork. Fixed anatomy, a semantic tool, and six art-directed palettes. */
@@ -59,8 +59,5 @@ export const BrandCharacter = memo(function BrandCharacter(props: { brand: Brand
     const initials = (words.length > 1 ? words.slice(0, 2).map(word => Array.from(word)[0]).join('') : Array.from(words[0] || '?').slice(0, 2).join('')).toLocaleUpperCase();
     return <span className="brand-signature" aria-hidden="true">{initials}</span>;
   }
-  if (props.lod === 'portrait') return <svg className="brand-bust" viewBox="62 0 140 150" aria-hidden={!props.labelled} role={props.labelled ? 'img' : undefined} aria-label={props.labelled ? `${props.brand.name}的角色` : undefined}>
-    <image href={(props.look ?? brandWearable(props.brand)).url} x="25" y="0" width="205" height="315" preserveAspectRatio="xMidYMid meet" onError={event=>{event.currentTarget.setAttribute('href',BASE_AVATAR);}} />
-  </svg>;
   return <WearableCharacter {...props} />;
 });
