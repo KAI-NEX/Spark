@@ -12,6 +12,7 @@ import { ColliderRuntime } from '../integrations/collider/brand-collider-skills-
 import { OpenAITextProvider, RuntimeError, loadTextOptions } from '../integrations/collider/brand-collider-skills-design/src/server/text-provider.ts';
 import type { TextProvider } from '../integrations/collider/brand-collider-skills-design/src/server/text-provider.ts';
 import { loadImageConfig } from '../integrations/collider/brand-collider-skills-design/src/providers/image-config.ts';
+import { CodexCliProvider } from '../integrations/collider/brand-collider-skills-design/src/server/codex-cli-provider';
 
 export const PROPOSAL_FIELDS = ['title', 'concept', 'contribution', 'ask', 'diagnostic0', 'diagnostic1', 'diagnostic2'] as const;
 const FIELD_TASKS = {
@@ -59,7 +60,15 @@ export function createColliderService(env: NodeJS.ProcessEnv) {
     }
     const imageOutputDir = resolve('outputs/collider-images');
     try { imageProvider = new OpenAIImageProvider(loadImageConfig({...env,OPENAI_BASE_URL:env.OPENAI_BASE_URL || 'https://api.openai.com/v1',IMAGE_TIMEOUT_MS:'180000',IMAGE_OUTPUT_DIR:imageOutputDir},cwd)); } catch { /* Leave image generation unavailable. */ }
-    const runtime = new ColliderRuntime({ cwd, provider, imageProvider, imageOutputDir, outputDir: resolve('outputs/collider-sessions') });
+    let runtimeProvider = provider;
+    // Keep quick form generation lightweight. Full material production needs the
+    // original CLI's real source discovery and image inspection capabilities.
+    if (provider && imageProvider && env.BRAND_AI_PROVIDER === 'codex') {
+      const native = new CodexCliProvider({ cwd, binary: env.CODEX_BIN || 'codex', model: provider.model,
+        outputDir: resolve('outputs/collider-cli-agents'), env: { ...process.env, ...env } });
+      try { await native.probe(); runtimeProvider = native; } catch { /* The original runtime reports media capability as unavailable. */ }
+    }
+    const runtime = new ColliderRuntime({ cwd, provider: runtimeProvider, imageProvider, imageOutputDir, outputDir: resolve('outputs/collider-sessions') });
     await runtime.init(); return { runtime, provider, imageProvider };
   })();
 }
