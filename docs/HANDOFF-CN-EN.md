@@ -1,5 +1,9 @@
 # 新对话接续说明 / Conversation Handoff
 
+最新 UI 接续（2026-09-08）：先读 [修复项目细节 UI · 双语迁移记录](UI-THREAD-HANDOFF-2026-09-08-CN-EN.md)。它保存原对话的最终用户要求、当前代码状态和中断前未验收事项；导航、页面顺序及 UI 规则冲突时，以该记录为准。下文的版本和测试数量是历史快照。
+
+Latest UI handoff (2026-09-08): read the [bilingual UI thread migration](UI-THREAD-HANDOFF-2026-09-08-CN-EN.md) first. It preserves final user requirements, current source status and unresolved acceptance items. It supersedes conflicting navigation, page-sequence and UI notes below; older revisions and test counts remain historical snapshots.
+
 日期 / Date: 2026-09-06
 
 ## 当前完成 / Completed

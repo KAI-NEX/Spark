@@ -16,6 +16,8 @@
 
 新对话请先阅读 / Start a new conversation with: [接续说明 / Handoff](docs/HANDOFF-CN-EN.md)。
 
+UI 对话归档接续 / UI thread archive handoff (2026-09-08): [最终要求、已实现与待验收 / Final requirements, implemented work and open acceptance](docs/UI-THREAD-HANDOFF-2026-09-08-CN-EN.md)。
+
 最新界面与实验页说明 / Latest UI & visual lab notes: [双语更新记录](docs/AVATAR-LAB-LOD-UPDATE-CN-EN.md)。
 
 独立的 React + TypeScript + Vite 前端 Demo。当前目录原本为空，没有现有框架、业务功能或 Git 仓库。
