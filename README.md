@@ -4,6 +4,10 @@ Spark 是一个从品牌资料出发，探索合作伙伴，再进入共创画�
 
 项目使用 React、TypeScript 和 Vite，复用 COLLIDER 的原生画板与任务运行时。品牌关系发现目前采用确定性的 Mock 规则；资料理解、提案与图片生成按实际配置连接模型服务。项目尚未实现面向真实品牌的在线交易、邀约发送或多人协作平台。
 
+[![Spark 项目交互架构图预览](output/architecture/2026-09-15/spark.visual-check.1440x900.light.png)](output/architecture/2026-09-15/spark.html)
+
+点击截图可查看交互式架构图；也可以直接打开 [架构图源文件](output/architecture/2026-09-15/spark.architecture.json) 和 [详细架构说明](docs/ARCHITECTURE.md)。
+
 > **案例用途声明：奶龙 × 库迪咖啡**
 >
 > 本仓库出现的奶龙、库迪咖啡及相关案例文件、角色、图片、文案与合作预演，仅用于项目介绍、学习交流和非商业功能演示，目的是展示项目流程可以运行；本项目未将该案例用于商业运营。
@@ -59,8 +63,8 @@ Spark 是一个从品牌资料出发，探索合作伙伴，再进入共创画�
 以 [package.json](package.json) 为准：Node.js **24+**，pnpm **10.11.0**。完整运行需要 Git 子模块中的 COLLIDER 源码。
 
 ```sh
-git clone --recurse-submodules https://github.com/KAI-NEX/brand-relations-demo.git
-cd brand-relations-demo
+git clone --recurse-submodules https://github.com/KAI-NEX/Spark.git
+cd Spark
 pnpm install
 pnpm dev
 ```

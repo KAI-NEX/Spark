@@ -1,4 +1,4 @@
 [submodule "integrations/collider"]
 	path = integrations/collider
-	url = https://github.com/KAI-NEX/brand-relations-demo.git
+	url = https://github.com/KAI-NEX/Spark.git
 	branch = collider-integration
