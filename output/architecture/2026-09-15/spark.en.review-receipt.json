@@ -1,0 +1,16 @@
+{
+  "diagram_type": "architecture",
+  "output": "/Users/kai/Documents/AIX_ORIGIN/output/architecture/2026-09-15/spark.en.html",
+  "specification_sha256": "5f7dca00089f1f7de52179e1e4b0f53ef251d3e7bb2dbea41d16757f19573889",
+  "artifact_sha256": "1d7405dda76c1bbf3c61d24b12f68c9ef93d6184b49ecee95e4f35dd75abc901",
+  "validation": "9/9 showcase, 0 errors, 0 warnings",
+  "browser_evidence": "passed",
+  "visual_review": "passed",
+  "correction_rounds": 1,
+  "review_scope": [
+    "English authoring and English Viewer UI",
+    "1440x900 light screenshot",
+    "2048x1320 dark screenshot",
+    "Automated containment at 1440x900, 1600x1000, 1920x1080, and 2048x1320"
+  ]
+}

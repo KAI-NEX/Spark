@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Spark · Project Architecture",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "viewBox": [1390, 650]
+  },
+  "components": [
+    { "id": "discovery", "type": "frontend", "label": "Brand Discovery UI", "sublabel": "Profiles · Avatars · Gravity / Cards", "pos": [60, 270], "size": [230, 80] },
+    { "id": "host", "type": "backend", "label": "Local Host API", "sublabel": "Vite middleware · projects · adapters", "pos": [420, 270], "size": [230, 80] },
+    { "id": "runtime", "type": "backend", "label": "COLLIDER Runtime", "sublabel": "Sessions · multi-stage tasks · assets", "pos": [780, 270], "size": [230, 80] },
+    { "id": "providers", "type": "external", "label": "Model Providers (Optional)", "sublabel": "Text / images · configuration dependent", "pos": [1140, 270], "size": [230, 80] },
+    { "id": "rules", "type": "frontend", "label": "Local Relation Engine", "sublabel": "Mock scoring · layout · LOD", "pos": [60, 60], "size": [230, 80] },
+    { "id": "canvas", "type": "frontend", "label": "Native Co-creation Canvas", "sublabel": "Separate canvas.html entry", "pos": [420, 60], "size": [230, 80] },
+    { "id": "files", "type": "database", "label": "Local File Storage", "sublabel": "outputs/ · projects · sessions · images", "pos": [780, 500], "size": [230, 80] },
+    { "id": "demo", "type": "backend", "label": "Limited Image Demo", "sublabel": "Codex image adapter · serial execution", "pos": [1140, 500], "size": [230, 80] },
+    { "id": "browser", "type": "database", "label": "Browser Local Storage", "sublabel": "Custom brand avatars · one device", "pos": [60, 500], "size": [230, 80] }
+  ],
+  "connections": [
+    { "id": "discover-api", "from": "discovery", "to": "host", "label": "Create project" },
+    { "id": "host-runtime", "from": "host", "to": "runtime", "label": "Adapt session" },
+    { "id": "runtime-model", "from": "runtime", "to": "providers", "label": "Model task" },
+    { "id": "rules-ui", "from": "rules", "to": "discovery", "label": "Relations & coordinates", "labelDy": 24 },
+    { "id": "canvas-host", "from": "canvas", "to": "host", "label": "HTTP request", "labelDy": 24 },
+    { "id": "runtime-files", "from": "runtime", "to": "files", "label": "Persist session", "labelDy": 24 },
+    { "id": "demo-model", "from": "demo", "to": "providers", "label": "Request image" },
+    { "id": "demo-files", "from": "demo", "to": "files", "label": "Persist result" },
+    { "id": "ui-storage", "from": "discovery", "to": "browser", "label": "Save avatar", "labelDy": 24 }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Primary Path", "items": ["Brand profile → partner discovery → project → co-creation canvas", "Two UI entries; the host and submodule connect through an adapter"] },
+    { "dot": "amber", "title": "Capability Boundaries", "items": ["Matching uses demo rules; AI depends on configured services", "Templates, pre-generated concepts, and current-run images keep distinct provenance"] },
+    { "dot": "rose", "title": "Demo Case Usage", "items": ["Cotti Coffee × Nailoong is a non-commercial runtime demonstration", "It does not imply an official partnership, authorization, or definitive match"] }
+  ]
+}

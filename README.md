@@ -4,9 +4,21 @@ Spark 是一个从品牌资料出发，探索合作伙伴，再进入共创画�
 
 项目使用 React、TypeScript 和 Vite，复用 COLLIDER 的原生画板与任务运行时。品牌关系发现目前采用确定性的 Mock 规则；资料理解、提案与图片生成按实际配置连接模型服务。项目尚未实现面向真实品牌的在线交易、邀约发送或多人协作平台。
 
-[![Spark 项目交互架构图预览](output/architecture/2026-09-15/spark.visual-check.1440x900.light.png)](output/architecture/2026-09-15/spark.html)
+## 架构图预览 / Architecture Preview
 
-点击截图可查看交互式架构图；也可以直接打开 [架构图源文件](output/architecture/2026-09-15/spark.architecture.json) 和 [详细架构说明](docs/ARCHITECTURE.md)。
+### 中文
+
+[![Spark 项目交互架构图中文版](output/architecture/2026-09-15/spark.visual-check.1440x900.light.png)](output/architecture/2026-09-15/spark.html)
+
+点击中文版截图可查看中文交互架构图；也可以打开 [中文架构图源文件](output/architecture/2026-09-15/spark.architecture.json)。
+
+### English
+
+[![Spark interactive project architecture in English](output/architecture/2026-09-15/spark.en.visual-check.1440x900.light.png)](output/architecture/2026-09-15/spark.en.html)
+
+Click the English screenshot to open the fully interactive English architecture diagram. The viewer controls, component labels, relationship labels, legend, and summary cards are all in English. You can also inspect the [English diagram source](output/architecture/2026-09-15/spark.en.architecture.json).
+
+完整代码证据与说明见 [详细架构说明](docs/ARCHITECTURE.md)。
 
 > **案例用途声明：奶龙 × 库迪咖啡**
 >
@@ -27,7 +39,7 @@ Spark 是一个从品牌资料出发，探索合作伙伴，再进入共创画�
 - [数据、素材与存储](#数据素材与存储)
 - [开发验证与限制](#开发验证与限制)
 
-配套产物：[交互式架构图](output/architecture/2026-09-15/spark.html) · [架构图 JSON](output/architecture/2026-09-15/spark.architecture.json) · [代码证据与架构详解](docs/ARCHITECTURE.md)。架构 HTML 下载到本机后可直接用浏览器打开；GitHub 文件页不会直接运行其中的交互功能。
+配套产物：[中文交互架构图](output/architecture/2026-09-15/spark.html) · [English interactive architecture](output/architecture/2026-09-15/spark.en.html) · [代码证据与架构详解](docs/ARCHITECTURE.md)。架构 HTML 下载到本机后可直接用浏览器打开；GitHub 文件页不会直接运行其中的交互功能。
 
 本文根据 **2026-09-15 的本地工作树**重新核对，包含当时尚未同步的画板生图演示实现。旧 README 原样保存在 [历史副本](docs/archive/README-before-2026-09-15.md)；历史记录中的能力、参数和测试数量不应当作当前版本说明。
 
