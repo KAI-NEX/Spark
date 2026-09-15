@@ -1,0 +1,11 @@
+{
+  "diagram_type": "architecture",
+  "output": "/Users/kai/Documents/AIX_ORIGIN/output/architecture/2026-09-15/spark.html",
+  "specification_sha256": "75ead08aa89f26dcf4c468efc6755fa41ec22ec8a3265b8a2e8565f34d2003c5",
+  "artifact_sha256": "db85540a49c164823880e4aeec79bb8607c41ed297ab08aaf4cdeb3966348be8",
+  "validation": "9/9 showcase, 0 errors, 0 warnings",
+  "browser_evidence": "passed",
+  "visual_review": "passed",
+  "correction_rounds": 0,
+  "scope": "Name update; inspected 1440x900 light and 2048x1320 dark screenshots; four desktop viewports checked automatically"
+}

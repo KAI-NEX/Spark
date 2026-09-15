@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Users/kai/Documents/AIX_ORIGIN/output/architecture/2026-09-15/spark.architecture.json",
+  "output": "/Users/kai/Documents/AIX_ORIGIN/output/architecture/2026-09-15/spark.html",
+  "specification": {
+    "sha256": "75ead08aa89f26dcf4c468efc6755fa41ec22ec8a3265b8a2e8565f34d2003c5",
+    "bytes": 4318
+  },
+  "artifact": {
+    "sha256": "db85540a49c164823880e4aeec79bb8607c41ed297ab08aaf4cdeb3966348be8",
+    "bytes": 808999
+  },
+  "validation": {
+    "checksPassed": 9,
+    "checkCount": 9,
+    "compositionProfile": "showcase",
+    "compositionStatus": "pass",
+    "errors": 0,
+    "warnings": 0
+  }
+}

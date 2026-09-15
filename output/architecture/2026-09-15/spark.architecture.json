@@ -1,0 +1,227 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Spark · 项目架构",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1390,
+      650
+    ]
+  },
+  "components": [
+    {
+      "id": "discovery",
+      "type": "frontend",
+      "label": "品牌发现界面",
+      "sublabel": "资料 · 角色 · 引力 / 抽卡",
+      "pos": [
+        60,
+        270
+      ],
+      "size": [
+        230,
+        80
+      ]
+    },
+    {
+      "id": "host",
+      "type": "backend",
+      "label": "本地宿主 API",
+      "sublabel": "Vite 中间件 · 项目与适配",
+      "pos": [
+        420,
+        270
+      ],
+      "size": [
+        230,
+        80
+      ]
+    },
+    {
+      "id": "runtime",
+      "type": "backend",
+      "label": "COLLIDER 运行时",
+      "sublabel": "会话 · 多轮任务 · 物料",
+      "pos": [
+        780,
+        270
+      ],
+      "size": [
+        230,
+        80
+      ]
+    },
+    {
+      "id": "providers",
+      "type": "external",
+      "label": "模型服务（可选）",
+      "sublabel": "文字 / 图片 · 按配置调用",
+      "pos": [
+        1140,
+        270
+      ],
+      "size": [
+        230,
+        80
+      ]
+    },
+    {
+      "id": "rules",
+      "type": "frontend",
+      "label": "本地关系引擎",
+      "sublabel": "Mock 评分 · 布局 · LOD",
+      "pos": [
+        60,
+        60
+      ],
+      "size": [
+        230,
+        80
+      ]
+    },
+    {
+      "id": "canvas",
+      "type": "frontend",
+      "label": "原生共创画板",
+      "sublabel": "独立 canvas.html 入口",
+      "pos": [
+        420,
+        60
+      ],
+      "size": [
+        230,
+        80
+      ]
+    },
+    {
+      "id": "files",
+      "type": "database",
+      "label": "本机文件存储",
+      "sublabel": "outputs/ 项目 · 会话 · 图片",
+      "pos": [
+        780,
+        500
+      ],
+      "size": [
+        230,
+        80
+      ]
+    },
+    {
+      "id": "demo",
+      "type": "backend",
+      "label": "限额生图演示",
+      "sublabel": "Codex 图片适配 · 顺序执行",
+      "pos": [
+        1140,
+        500
+      ],
+      "size": [
+        230,
+        80
+      ]
+    },
+    {
+      "id": "browser",
+      "type": "database",
+      "label": "浏览器本地存储",
+      "sublabel": "自建品牌角色 · 不跨设备",
+      "pos": [
+        60,
+        500
+      ],
+      "size": [
+        230,
+        80
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "discover-api",
+      "from": "discovery",
+      "to": "host",
+      "label": "创建项目"
+    },
+    {
+      "id": "host-runtime",
+      "from": "host",
+      "to": "runtime",
+      "label": "适配会话"
+    },
+    {
+      "id": "runtime-model",
+      "from": "runtime",
+      "to": "providers",
+      "label": "模型任务"
+    },
+    {
+      "id": "rules-ui",
+      "from": "rules",
+      "to": "discovery",
+      "label": "关系与坐标",
+      "labelDy": 75
+    },
+    {
+      "id": "canvas-host",
+      "from": "canvas",
+      "to": "host",
+      "label": "HTTP 请求",
+      "labelDy": 75
+    },
+    {
+      "id": "runtime-files",
+      "from": "runtime",
+      "to": "files",
+      "label": "保存会话",
+      "labelDy": 75
+    },
+    {
+      "id": "demo-model",
+      "from": "demo",
+      "to": "providers",
+      "label": "请求生图"
+    },
+    {
+      "id": "demo-files",
+      "from": "demo",
+      "to": "files",
+      "label": "保存结果"
+    },
+    {
+      "id": "ui-storage",
+      "from": "discovery",
+      "to": "browser",
+      "label": "保存角色",
+      "labelDy": 75
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "阅读主线",
+      "items": [
+        "品牌资料 → 发现伙伴 → 项目 → 共创画板",
+        "界面双入口；宿主与子模块通过适配层连接"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "能力边界",
+      "items": [
+        "匹配为规则演示；AI 依赖实际服务能力",
+        "模板、历史预生成图、本轮出图区分来源"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "案例用途",
+      "items": [
+        "库迪 × 奶龙仅供非商业运行演示",
+        "不代表官方合作、授权或确定的匹配结论"
+      ]
+    }
+  ]
+}
