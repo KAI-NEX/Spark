@@ -4,6 +4,16 @@ Spark 是一个从品牌资料出发，探索合作伙伴，再进入共创画�
 
 项目使用 React、TypeScript 和 Vite，复用 COLLIDER 的原生画板与任务运行时。品牌关系发现目前采用确定性的 Mock 规则；资料理解、提案与图片生成按实际配置连接模型服务。项目尚未实现面向真实品牌的在线交易、邀约发送或多人协作平台。
 
+## 产品目标与团队分工 / Product & ownership
+
+**我希望验证：品牌合作能否从“看起来合适”走向可解释的合作假设，再形成可供讨论的提案。** Spark 将资料理解、关系探索与物料共创串在一个原型中；当前证明的是流程与能力边界，尚未证明真实品牌撮合效果或商业转化。
+
+我是 [KAI](https://github.com/KAI-NEX)，主要负责项目目标、架构与产品逻辑、前端设计及实现推进。**除无限画布外，我参与了 Spark 的其余所有内容；无限画布由队友负责。** 参与其余内容不表示其余模块全部由我单独开发。画布及 COLLIDER 运行时的来源与复用保留在[整合说明](docs/COLLIDER-INTEGRATION.md)中；AI 工具辅助实现、测试和内容制作。
+
+**My role:** product goals, architecture and product logic, and frontend design/delivery. I participated across the rest of Spark; a teammate built the infinite canvas. This is a collaborative project with AI-assisted implementation, not a claim that I authored every component. The next validation is a real brand/design team's proposal workflow, with review effort and usable outputs measured explicitly.
+
+[阅读产品案例、关键取舍与个人贡献](docs/PRODUCT_CASE_STUDY.md)
+
 ## 架构图预览 / Architecture Preview
 
 ### 中文
